@@ -85,7 +85,7 @@ export default function App() {
     const [shift, setShift] = useState(null);
     const [estado, setEstado] = useState('fuera');
     const [name, setName] = useState('Empleado');
-    const [targetMin, setTargetMin] = useState(480);
+    const [targetMin, setTargetMin] = useState(null); // se llena con el target_hours real del perfil
     const [view, setView] = useState('clock'); // clock | history
     const [notis, setNotis] = useState([]);
     const [notisOpen, setNotisOpen] = useState(false);
