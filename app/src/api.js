@@ -1,4 +1,4 @@
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem, deleteItem } from './storage';
 
 // La app habla SOLO con el api (auth queda interno; el login pega a POST /auth/login del api).
 // Base del backend: en builds EAS se inyecta EXPO_PUBLIC_API_URL en build-time (dominio real,
@@ -19,16 +19,16 @@ function baseHeaders(extra = {}) {
 let token = null;
 
 export async function loadToken() {
-    token = await SecureStore.getItemAsync('fichada_token');
+    token = await getItem('fichada_token');
     return token;
 }
 export async function setToken(t) {
     token = t;
-    await SecureStore.setItemAsync('fichada_token', t);
+    await setItem('fichada_token', t);
 }
 export async function clearToken() {
     token = null;
-    await SecureStore.deleteItemAsync('fichada_token');
+    await deleteItem('fichada_token');
 }
 
 async function req(path, opts = {}) {

@@ -1,17 +1,17 @@
 import { Platform } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
 import * as ExpoDevice from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { getItem, setItem } from './storage';
 import { registerDevice } from './api';
 
 const UUID_KEY = 'fichada_device_uuid';
 
 // Identificador estable del dispositivo (device-binding): se genera una vez y persiste.
 async function getDeviceUuid() {
-    let id = await SecureStore.getItemAsync(UUID_KEY);
+    let id = await getItem(UUID_KEY);
     if (!id) {
         id = `${Platform.OS}-${Date.now()}-${Math.floor(Math.random() * 1e9)}`;
-        await SecureStore.setItemAsync(UUID_KEY, id);
+        await setItem(UUID_KEY, id);
     }
     return id;
 }
