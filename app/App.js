@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { View, Text, ActivityIndicator, Alert, SafeAreaView, StatusBar } from 'react-native';
-import * as SecureStore from 'expo-secure-store';
+import { getItem, setItem, IS_WEB } from './src/storage';
 import * as Location from 'expo-location';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Notifications from 'expo-notifications';
@@ -95,7 +95,7 @@ export default function App() {
         (async () => {
             const tk = await loadToken();
             if (!tk) { setSession('login'); return; }
-            const pin = await SecureStore.getItemAsync(PIN_KEY);
+            const pin = await getItem(PIN_KEY);
             setSession(pin ? 'unlock' : 'active');
         })();
     }, []);
@@ -143,7 +143,7 @@ export default function App() {
         setAuthError(null); setBusy(true);
         try {
             await login(email, password);
-            const pin = await SecureStore.getItemAsync(PIN_KEY);
+            const pin = await getItem(PIN_KEY);
             setSession(pin ? 'active' : 'createPin');
         } catch (e) {
             setAuthError(e.message || 'No se pudo iniciar sesión');
@@ -155,10 +155,10 @@ export default function App() {
     async function onPin(mode, value) {
         if (mode === 'create') { setPinDraft(value); setAuthError(null); setSession('confirmPin'); }
         else if (mode === 'confirm') {
-            if (value === pinDraft) { await SecureStore.setItemAsync(PIN_KEY, value); setSession('active'); }
+            if (value === pinDraft) { await setItem(PIN_KEY, value); setSession('active'); }
             else { setAuthError(t('pinIncorrecto')); setSession('createPin'); }
         } else if (mode === 'unlock') {
-            const stored = await SecureStore.getItemAsync(PIN_KEY);
+            const stored = await getItem(PIN_KEY);
             if (value === stored) { setAuthError(null); setSession('active'); }
             else setAuthError(t('pinIncorrecto'));
         }
@@ -218,7 +218,7 @@ export default function App() {
     } else if (session === 'confirmPin') {
         content = <PinScreen t={t} mode="confirm" error={authError} onComplete={(p) => onPin('confirm', p)} />;
     } else if (session === 'unlock') {
-        content = <PinScreen t={t} mode="unlock" name={name} error={authError} onComplete={(p) => onPin('unlock', p)} onBio={onBio} />;
+        content = <PinScreen t={t} mode="unlock" name={name} error={authError} onComplete={(p) => onPin('unlock', p)} onBio={IS_WEB ? undefined : onBio} />;
     } else if (view === 'history') {
         content = <HistoryScreen t={t} lang={LANG} onBack={() => setView('clock')} />;
     } else if (prevDayOpen) {
