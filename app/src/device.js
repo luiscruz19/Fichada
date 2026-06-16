@@ -1,8 +1,12 @@
 import { Platform } from 'react-native';
 import * as ExpoDevice from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { getItem, setItem } from './storage';
 import { registerDevice } from './api';
+
+// En Expo Go (SDK 53+) las push de Android no están disponibles → no las pedimos.
+const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 
 const UUID_KEY = 'fichada_device_uuid';
 
@@ -18,6 +22,7 @@ async function getDeviceUuid() {
 
 // Push token de Expo (best-effort: requiere permisos y projectId/EAS; si falla, null).
 async function getPushToken() {
+    if (IS_EXPO_GO) return null; // push no disponible en Expo Go
     try {
         let { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
