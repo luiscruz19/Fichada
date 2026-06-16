@@ -13,10 +13,21 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
     const router = useRouter();
     const [editing, setEditing] = useState<Draft | null>(null);
     const [busy, setBusy] = useState(false);
+    const [regen, setRegen] = useState<{ email: string; temp: string } | null>(null);
 
     async function action(fn: () => Promise<any>) {
         setBusy(true);
         try { await fn(); router.refresh(); } finally { setBusy(false); }
+    }
+
+    async function regenerate(e: Employee) {
+        if (!confirm(`Regenerar acceso de ${e.first_name} ${e.last_name}?\n\nSe genera una nueva contraseña temporal y se borra su PIN actual.`)) return;
+        setBusy(true);
+        try {
+            const r = await px(`/employees/admin/${e.id}/reset-access`, { method: 'POST', body: '{}' });
+            if (r.ok && r.json?.temp_password) setRegen({ email: e.email, temp: r.json.temp_password });
+            else alert(r.json?.message || 'No se pudo regenerar el acceso');
+        } finally { setBusy(false); }
     }
 
     return (
@@ -57,6 +68,9 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
                                                 <button title="Resetear PIN" disabled={busy}
                                                     onClick={() => action(() => px(`/employees/admin/${e.id}/reset-pin`, { method: 'POST', body: '{}' }))}
                                                     style={iconBtn}>{Ic.lock({ size: 16 })}</button>
+                                                <button title="Regenerar acceso (nueva contraseña temporal)" disabled={busy}
+                                                    onClick={() => regenerate(e)}
+                                                    style={iconBtn}>{Ic.key({ size: 16 })}</button>
                                                 <button title="Revocar sesión (kill switch)" disabled={busy}
                                                     onClick={() => action(() => px(`/employees/admin/${e.id}/kill-switch`, { method: 'POST', body: '{}' }))}
                                                     style={{ ...iconBtn, color: 'var(--warn)' }}>{Ic.power({ size: 16 })}</button>
@@ -85,7 +99,46 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
             {editing && (
                 <EmployeeDrawer draft={editing} onClose={() => setEditing(null)} onSaved={() => { setEditing(null); router.refresh(); }} />
             )}
+
+            {regen && (
+                <CredsModal
+                    title="Acceso regenerado"
+                    email={regen.email}
+                    temp={regen.temp}
+                    note="Se generó una nueva contraseña temporal y se borró el PIN. Pasale estas credenciales al empleado: al ingresar configurará un PIN nuevo."
+                    onClose={() => { setRegen(null); router.refresh(); }}
+                />
+            )}
         </main>
+    );
+}
+
+function CredsModal({ title, email, temp, note, onClose }: { title: string; email: string; temp: string; note: string; onClose: () => void }) {
+    return (
+        <>
+            <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'oklch(0.2 0.02 260 / 0.28)', zIndex: 30, animation: 'fch-fade 0.18s' }} />
+            <div style={{ position: 'fixed', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 420, maxWidth: 'calc(100vw - 32px)', background: 'var(--surface)', borderRadius: 16, zIndex: 31, boxShadow: '0 24px 60px oklch(0.2 0.02 260 / 0.28)', overflow: 'hidden' }}>
+                <div style={{ padding: '18px 22px', borderBottom: '1px solid var(--hairline)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <div style={{ fontSize: 17, fontWeight: 700 }}>{title}</div>
+                    <button onClick={onClose} style={{ color: 'var(--ink-3)', padding: 4 }}>{Ic.x({ size: 22 })}</button>
+                </div>
+                <div style={{ padding: '18px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+                    <div style={{ background: 'var(--ok-tint)', color: 'var(--ok)', borderRadius: 10, padding: '10px 12px', fontSize: 13, fontWeight: 600, display: 'flex', alignItems: 'center', gap: 7 }}>
+                        {Ic.check({ size: 16 })}Contraseña temporal generada
+                    </div>
+                    <p style={{ fontSize: 13.5, color: 'var(--ink-2)', lineHeight: 1.5, margin: 0 }}>{note}</p>
+                    <div style={{ border: '1px solid var(--hairline)', borderRadius: 12, padding: '14px 16px', background: 'var(--surface-2)' }}>
+                        <div style={{ fontSize: 12, color: 'var(--ink-3)', fontWeight: 600 }}>Usuario</div>
+                        <div style={{ fontSize: 15, fontWeight: 600, marginBottom: 10 }}>{email}</div>
+                        <div style={{ fontSize: 12, color: 'var(--ink-3)', fontWeight: 600 }}>Contraseña temporal</div>
+                        <div className="tnum" style={{ fontSize: 18, fontWeight: 700, letterSpacing: '0.04em' }}>{temp}</div>
+                    </div>
+                </div>
+                <div style={{ padding: '14px 22px', borderTop: '1px solid var(--hairline)' }}>
+                    <button onClick={onClose} className="btn-primary" style={{ width: '100%', height: 42, justifyContent: 'center', fontSize: 14 }}>Listo</button>
+                </div>
+            </div>
+        </>
     );
 }
 
