@@ -1,0 +1,97 @@
+# ════════════════════════════════════════════════════════════════════════════
+#  FICHADA · PROD (test server) — backend completo. Build+push + runtime.
+#  - `deploy.sh test` lo usa para BUILD + PUSH de las imágenes a GHCR.
+#  - En el server se usa el mismo archivo para PULL + UP (el bloque build: es inerte
+#    al hacer pull/up con las imágenes ya publicadas; nada se compila en el server).
+#  Infra compartida (Traefik, mysql_db) provista por /opt/shared en la red externa
+#  net-shared. Ruteo (todo bajo fichada.sda.ovh):
+#    - api        → /api        (stripprefix; lo consume la app → EXPO_PUBLIC_API_URL=.../api)
+#    - backoffice → /backoffice (Next con basePath /backoffice; sus rutas /api/* quedan
+#                                bajo /backoffice/api/*, sin chocar con el api de dominio)
+#    - auth/mailer → internos (sin Traefik). El mailer NO usa DB.
+#  Variables runtime en .env (no versionado).
+# ════════════════════════════════════════════════════════════════════════════
+services:
+  fichada_auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile.production
+    image: ghcr.io/luiscruz19/fichada-auth:${TAG:-TEST}
+    container_name: fichada_auth
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      SERVICE_NAME: auth
+    networks:
+      - net-shared
+
+  fichada_mailer:
+    build:
+      context: ./services/mailer
+      dockerfile: Dockerfile.production
+    image: ghcr.io/luiscruz19/fichada-mailer:${TAG:-TEST}
+    container_name: fichada_mailer
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      # El mailer valida con su propio user Basic (el .env compartido trae AUTH_BASIC_USER=auth).
+      AUTH_BASIC_USER: mailer
+    networks:
+      - net-shared
+
+  fichada_api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.production
+    image: ghcr.io/luiscruz19/fichada-api:${TAG:-TEST}
+    container_name: fichada_api
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=net-shared"
+      - "traefik.http.routers.fichada_api.rule=Host(`fichada.sda.ovh`) && PathPrefix(`/api`)"
+      - "traefik.http.routers.fichada_api.priority=20"
+      - "traefik.http.middlewares.fichada_api_strip.stripprefix.prefixes=/api"
+      - "traefik.http.routers.fichada_api.middlewares=fichada_api_strip"
+      - "traefik.http.services.fichada_api.loadbalancer.server.port=80"
+    networks:
+      - net-shared
+
+  fichada_backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile.production
+    image: ghcr.io/luiscruz19/fichada-backoffice:${TAG:-TEST}
+    container_name: fichada_backoffice
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      NODE_ENV: production
+      PORT: "80"
+      API_URL: http://fichada_api
+      AUTH_URL: http://fichada_auth
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=net-shared"
+      - "traefik.http.routers.fichada_backoffice.rule=Host(`fichada.sda.ovh`) && PathPrefix(`/backoffice`)"
+      - "traefik.http.routers.fichada_backoffice.priority=20"
+      - "traefik.http.services.fichada_backoffice.loadbalancer.server.port=80"
+    networks:
+      - net-shared
+
+networks:
+  net-shared:
+    external: true

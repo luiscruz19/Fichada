@@ -1,0 +1,103 @@
+# Fichada — usa la infra compartida de /opt/shared (Traefik + mysql_db + net-shared).
+# Requisitos: que /opt/shared esté levantado (red net-shared + mysql_db + traefik).
+#   make up   (crea .env, asegura las DBs y levanta los servicios)
+# Acceso (vía Traefik):
+#   - Backoffice:  http://fichada.localhost
+#   - API:         http://fichada-api.localhost   (login del cliente: POST /auth/login)
+#   - Auth y Mailer: internos (solo net-shared), no expuestos.
+name: fichada
+
+services:
+  ##----------------------------------------------
+  ##        SERVICIOS CORE (internos)
+  ##----------------------------------------------
+
+  fichada_auth:
+    build:
+      context: ./services/auth
+      dockerfile: Dockerfile.development
+    container_name: fichada_auth
+    restart: always
+    env_file: ./services/auth/.env
+    environment:
+      - NODE_ENV=development
+      - SERVICE_NAME=auth
+      - TZ=America/Argentina/Buenos_Aires
+    # Interno (sin Traefik): solo accesible dentro de net-shared. El login del cliente
+    # entra por el api (POST /auth/login), que proxea acá con el Basic servicio↔servicio.
+    networks:
+      - net-shared
+
+  fichada_mailer:
+    build:
+      context: ./services/mailer
+      dockerfile: Dockerfile.development
+    container_name: fichada_mailer
+    restart: always
+    env_file: ./services/mailer/.env
+    environment:
+      - NODE_ENV=development
+      - TZ=America/Argentina/Buenos_Aires
+    networks:
+      - net-shared
+
+  ##----------------------------------------------
+  ##        DOMINIO + PANEL
+  ##----------------------------------------------
+
+  fichada_api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile.development
+    container_name: fichada_api
+    restart: always
+    env_file: ./api/.env
+    environment:
+      - NODE_ENV=development
+      - TZ=America/Argentina/Buenos_Aires
+    ports:
+      # Acceso directo (sin Traefik) para builds preview-local / LAN de la app.
+      - "4000:80"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=net-shared"
+      - "traefik.http.routers.fichada_api.rule=Host(`fichada-api.localhost`)"
+      - "traefik.http.routers.fichada_api.priority=10"
+      - "traefik.http.services.fichada_api.loadbalancer.server.port=80"
+    networks:
+      - net-shared
+
+  fichada_backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile.development
+    container_name: fichada_backoffice
+    restart: always
+    environment:
+      # El Next habla server-side con los servicios por hostname de net-shared (no se exponen al browser).
+      API_URL: http://fichada_api
+      AUTH_URL: http://fichada_auth
+      AUTH_BASIC_USER: auth
+      AUTH_BASIC_PW: secret
+      NODE_ENV: development
+      PORT: "80"
+      TZ: America/Argentina/Buenos_Aires
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=net-shared"
+      - "traefik.http.routers.fichada_backoffice.rule=Host(`fichada.localhost`) && PathPrefix(`/backoffice`)"
+      - "traefik.http.routers.fichada_backoffice.priority=10"
+      - "traefik.http.services.fichada_backoffice.loadbalancer.server.port=80"
+    depends_on:
+      - fichada_api
+      - fichada_auth
+    volumes:
+      - ./backoffice:/usr/src/fichada-backoffice
+      - /usr/src/fichada-backoffice/node_modules
+      - /usr/src/fichada-backoffice/.next
+    networks:
+      - net-shared
+
+networks:
+  net-shared:
+    external: true
