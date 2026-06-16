@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, ActivityIndicator, Alert, SafeAreaView, StatusBar } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { getItem, setItem, IS_WEB } from './src/storage';
 import * as Location from 'expo-location';
 import * as LocalAuthentication from 'expo-local-authentication';
-import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
 import { C } from './src/theme';
@@ -21,6 +21,8 @@ import { LoginScreen, PinScreen } from './src/screens/AccessScreens';
 // fuera de Expo Go (en el build EAS sí funcionan). Evita el error en consola de Expo Go.
 const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 if (!IS_EXPO_GO) {
+    // require lazy: evita cargar expo-notifications (y su error) en Expo Go.
+    const Notifications = require('expo-notifications');
     Notifications.setNotificationHandler({
         handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }),
     });
@@ -260,10 +262,12 @@ export default function App() {
     }
 
     return (
-        <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
-            <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
-            {content}
-            <NotisSheet t={t} visible={notisOpen} items={notis} onClose={() => setNotisOpen(false)} onRead={markAllRead} />
-        </SafeAreaView>
+        <SafeAreaProvider>
+            <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+                <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
+                {content}
+                <NotisSheet t={t} visible={notisOpen} items={notis} onClose={() => setNotisOpen(false)} onRead={markAllRead} />
+            </SafeAreaView>
+        </SafeAreaProvider>
     );
 }
