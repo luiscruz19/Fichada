@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import {
-    Clock, MapPin, ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight,
+    Clock, ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight,
 } from 'lucide-react-native';
 import { C, R, shadow1, shadowPress } from '../theme';
 import { Dot, Chip, Avatar } from '../components';
@@ -72,20 +72,24 @@ function SecondaryBtn({ label, Icon, onPress, tone }) {
 }
 
 function Summary({ t, workedMin, targetMin, pausaMin }) {
-    const pct = Math.min(100, (workedMin / targetMin) * 100);
+    // El objetivo y la barra solo se muestran si el empleado tiene jornada configurada (dato real).
+    const hasTarget = targetMin != null && targetMin > 0;
+    const pct = hasTarget ? Math.min(100, (workedMin / targetMin) * 100) : 0;
     return (
         <View style={[{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.hairline, borderRadius: R.lg, padding: 16 }, shadow1]}>
             <Text style={{ fontSize: 11, fontWeight: '600', letterSpacing: 1.5, textTransform: 'uppercase', color: C.ink3, marginBottom: 8 }}>{t('trabajadoHoy')}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: 12 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'flex-end', justifyContent: 'space-between', marginBottom: hasTarget ? 12 : 0 }}>
                 <Text style={{ fontSize: 32, fontWeight: '700', letterSpacing: -0.6, color: C.ink }}>{fmtDur(workedMin)}</Text>
                 <View style={{ alignItems: 'flex-end' }}>
-                    <Text style={{ fontSize: 13, color: C.ink3 }}>{t('objetivo')} {fmtDur(targetMin)}</Text>
+                    {hasTarget ? <Text style={{ fontSize: 13, color: C.ink3 }}>{t('objetivo')} {fmtDur(targetMin)}</Text> : null}
                     {pausaMin > 0 ? <Text style={{ fontSize: 13, color: C.ink3 }}>{t('pausasLabel')} {fmtDur(pausaMin)}</Text> : null}
                 </View>
             </View>
-            <View style={{ height: 7, borderRadius: 4, backgroundColor: C.surface3, overflow: 'hidden' }}>
-                <View style={{ width: `${pct}%`, height: '100%', backgroundColor: C.accent, borderRadius: 4 }} />
-            </View>
+            {hasTarget ? (
+                <View style={{ height: 7, borderRadius: 4, backgroundColor: C.surface3, overflow: 'hidden' }}>
+                    <View style={{ width: `${pct}%`, height: '100%', backgroundColor: C.accent, borderRadius: 4 }} />
+                </View>
+            ) : null}
         </View>
     );
 }
@@ -139,9 +143,8 @@ export default function ClockScreen({
                     </View>
                 </View>
 
-                <View style={[{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.hairline, borderRadius: R.lg, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }, shadow1]}>
+                <View style={[{ backgroundColor: C.surface, borderWidth: 1, borderColor: C.hairline, borderRadius: R.lg, paddingVertical: 14, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center' }, shadow1]}>
                     <StatusLine estado={estado} sinceLabel={sinceLabel} t={t} />
-                    <Chip tone="neutral" icon={<MapPin size={13} color={C.ink2} strokeWidth={1.7} />}>{t('sucursal')}</Chip>
                 </View>
 
                 <View style={{ gap: 12 }}>

@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getToken, apiGetJson } from '@/lib/api';
+import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { EquipoClient } from '@/components/EquipoClient';
 import type { Employee } from '@/lib/types';
@@ -13,7 +13,7 @@ export default async function EquipoPage() {
 
     return (
         <div className="admin">
-            <Sidebar />
+            <Sidebar adminName={await getAdminName()} />
             <EquipoClient employees={employees} />
         </div>
     );

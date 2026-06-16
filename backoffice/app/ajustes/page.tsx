@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getToken, apiGetJson } from '@/lib/api';
+import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { AjustesClient } from '@/components/AjustesClient';
 import type { Setting, Site } from '@/lib/types';
@@ -13,7 +13,7 @@ export default async function AjustesPage() {
 
     return (
         <div className="admin">
-            <Sidebar />
+            <Sidebar adminName={await getAdminName()} />
             <AjustesClient settings={sJson?.data || null} sites={siteJson?.data || []} />
         </div>
     );
