@@ -69,4 +69,4 @@ if docker compose ps | grep -E "(Exit|unhealthy)" >/dev/null 2>&1; then
 fi
 EOF
 
-echo "✓ Deploy completado (TAG=$TAG) → https://fichada.sda.ovh · panel https://panel.fichada.sda.ovh"
+echo "✓ Deploy completado (TAG=$TAG) → https://fichada.sda.ovh · panel https://fichada.sda.ovh/backoffice"
