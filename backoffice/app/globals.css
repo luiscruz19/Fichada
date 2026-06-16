@@ -1,0 +1,65 @@
+/* ============================================================
+   Fichada — design tokens (del handoff de Claude Design)
+   Sobrio / profesional, casi monocromático + acento mínimo.
+   ============================================================ */
+
+:root {
+  --bg:        oklch(0.985 0.0015 95);
+  --surface:   oklch(1 0 0);
+  --surface-2: oklch(0.965 0.002 95);
+  --surface-3: oklch(0.94 0.003 95);
+
+  --ink:       oklch(0.22 0.008 260);
+  --ink-2:     oklch(0.42 0.008 260);
+  --ink-3:     oklch(0.58 0.006 260);
+  --hairline:  oklch(0.90 0.003 260);
+  --hairline-2:oklch(0.83 0.004 260);
+
+  --accent:        oklch(0.50 0.11 248);
+  --accent-press:  oklch(0.43 0.11 248);
+  --accent-tint:   oklch(0.50 0.11 248 / 0.10);
+  --on-accent:     oklch(0.99 0 0);
+
+  --ok:        oklch(0.55 0.10 155);
+  --ok-tint:   oklch(0.55 0.10 155 / 0.12);
+  --warn:      oklch(0.66 0.12 70);
+  --warn-tint: oklch(0.66 0.12 70 / 0.14);
+  --danger:    oklch(0.56 0.16 25);
+  --danger-tint:oklch(0.56 0.16 25 / 0.12);
+
+  --font: 'Hanken Grotesk', system-ui, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+
+  --r-sm: 10px;  --r-md: 14px;  --r-lg: 20px;  --r-xl: 28px;
+
+  --shadow-1: 0 1px 2px oklch(0.2 0.02 260 / 0.06), 0 1px 1px oklch(0.2 0.02 260 / 0.04);
+  --shadow-2: 0 6px 20px oklch(0.2 0.02 260 / 0.08), 0 2px 6px oklch(0.2 0.02 260 / 0.05);
+}
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; }
+body { font-family: var(--font); color: var(--ink); background: var(--bg); -webkit-font-smoothing: antialiased; }
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+input, textarea, select { font-family: inherit; }
+
+.tnum { font-variant-numeric: tabular-nums; font-feature-settings: "tnum" 1; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.14em; text-transform: uppercase; color: var(--ink-3); }
+.placeholder-note { font-family: var(--mono); font-size: 11px; color: var(--ink-3); }
+.ph-stripe { background-image: repeating-linear-gradient(-45deg, var(--surface-3) 0 8px, transparent 8px 16px); background-color: var(--surface-2); }
+
+/* panel admin */
+.admin { font-family: var(--font); color: var(--ink); background: var(--bg); min-height: 100vh; display: flex; }
+.nav-item { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border-radius: 10px; font-size: 14px; font-weight: 500; color: var(--ink-2); cursor: pointer; text-decoration: none; }
+.nav-item.active { background: var(--surface); color: var(--ink); box-shadow: var(--shadow-1); font-weight: 600; }
+.nav-item:not(.active):hover { background: var(--surface-2); }
+.th { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink-3); text-align: left; padding: 0 14px 10px; }
+.td { padding: 13px 14px; font-size: 13.5px; border-top: 1px solid var(--hairline); }
+.row:hover { background: var(--surface-2); cursor: pointer; }
+.row.flag { background: color-mix(in oklab, var(--warn) 5%, var(--surface)); }
+.seg { display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border-radius: 9px; border: 1px solid var(--hairline-2); background: var(--surface); font-size: 13px; font-weight: 500; color: var(--ink-2); cursor: pointer; }
+.btn-primary { height: 36px; padding: 0 16px; border-radius: 9px; background: var(--accent); color: var(--on-accent); font-size: 13.5px; font-weight: 600; border: none; cursor: pointer; display: inline-flex; align-items: center; gap: 7px; }
+
+@keyframes fch-fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes fch-drawer { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes fch-pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+@keyframes fch-spin { to { transform: rotate(360deg); } }

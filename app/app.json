@@ -1,0 +1,37 @@
+{
+    "expo": {
+        "name": "Fichada",
+        "slug": "fichada",
+        "scheme": "fichada",
+        "owner": "luiscruzz.salta",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "userInterfaceStyle": "light",
+        "backgroundColor": "#fafaf9",
+        "assetBundlePatterns": ["**/*"],
+        "android": {
+            "package": "com.fichada.app",
+            "permissions": [
+                "ACCESS_FINE_LOCATION",
+                "ACCESS_COARSE_LOCATION",
+                "USE_BIOMETRIC",
+                "USE_FINGERPRINT"
+            ]
+        },
+        "ios": {
+            "supportsTablet": false,
+            "bundleIdentifier": "com.fichada.app",
+            "infoPlist": {
+                "NSLocationWhenInUseUsageDescription": "Fichada registra dónde fichás cada entrada y salida.",
+                "NSFaceIDUsageDescription": "Usá Face ID para abrir Fichada rápido."
+            }
+        },
+        "plugins": [
+            "expo-secure-store",
+            "expo-local-authentication",
+            "expo-notifications",
+            ["expo-location", { "locationWhenInUsePermission": "Fichada registra dónde fichás cada entrada y salida." }],
+            ["expo-build-properties", { "android": { "usesCleartextTraffic": true } }]
+        ]
+    }
+}
