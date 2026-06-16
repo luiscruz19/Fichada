@@ -9,13 +9,13 @@ import Constants from 'expo-constants';
 import { C } from './src/theme';
 import { makeT } from './src/i18n';
 import { fmtTime } from './src/helpers';
-import { loadToken, clearToken, login, getProfile, getStatus, clockIn, clockOut, startBreak, endBreak, listNotifications, markNotificationRead } from './src/api';
+import { loadToken, clearToken, login, hasPin, loginPin, setPinRemote, getProfile, getStatus, clockIn, clockOut, startBreak, endBreak, listNotifications, markNotificationRead } from './src/api';
 import { syncDevice } from './src/device';
 import ClockScreen from './src/screens/ClockScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import BlockedShiftScreen from './src/screens/BlockedShiftScreen';
 import NotisSheet from './src/screens/NotisSheet';
-import { LoginScreen, PinScreen } from './src/screens/AccessScreens';
+import { EmailScreen, PasswordScreen, PinScreen } from './src/screens/AccessScreens';
 
 // Push: Expo Go (SDK 53+) removió las push de Android. Solo configuramos el handler
 // fuera de Expo Go (en el build EAS sí funcionan). Evita el error en consola de Expo Go.
@@ -29,6 +29,7 @@ if (!IS_EXPO_GO) {
 }
 
 const PIN_KEY = 'fichada_pin';
+const EMAIL_KEY = 'fichada_email';
 const LANG = 'es';
 
 // ---- live clock ----
@@ -84,8 +85,11 @@ export default function App() {
     const t = useMemo(() => makeT(LANG), []);
     const now = useNow(1000);
 
-    const [session, setSession] = useState('boot'); // boot|login|createPin|confirmPin|unlock|active
+    // boot | emailEntry | loginPassword | createPin | confirmPin | loginPin | active
+    const [session, setSession] = useState('boot');
+    const [email, setEmail] = useState('');
     const [pinDraft, setPinDraft] = useState('');
+    const [canBio, setCanBio] = useState(false);
     const [authError, setAuthError] = useState(null);
     const [busy, setBusy] = useState(false);
 
@@ -97,13 +101,14 @@ export default function App() {
     const [notis, setNotis] = useState([]);
     const [notisOpen, setNotisOpen] = useState(false);
 
-    // boot
+    // boot: si hay sesión guardada entra directo; si no, arranca pidiendo el email.
     useEffect(() => {
         (async () => {
             const tk = await loadToken();
-            if (!tk) { setSession('login'); return; }
-            const pin = await getItem(PIN_KEY);
-            setSession(pin ? 'unlock' : 'active');
+            if (tk) { setSession('active'); return; }
+            const last = await getItem(EMAIL_KEY);
+            if (last) setEmail(last);
+            setSession('emailEntry');
         })();
     }, []);
 
@@ -114,7 +119,7 @@ export default function App() {
             setEstado(STATUS_MAP[data.status] || 'fuera');
             setShift(data.shift || null);
         } catch (e) {
-            if (e.status === 401) { await clearToken(); setSession('login'); }
+            if (e.status === 401) { await clearToken(); setSession('emailEntry'); }
         }
     }, []);
 
@@ -146,12 +151,36 @@ export default function App() {
         await loadNotis();
     }
 
-    async function onLogin(email, password) {
+    // Paso 1: email → ¿tiene PIN? → pide PIN, o pide contraseña (primer ingreso).
+    async function onContinueEmail(em) {
+        const e = String(em || '').trim().toLowerCase();
+        if (!e) { setAuthError('Ingresá tu email'); return; }
+        setEmail(e); setAuthError(null); setBusy(true);
+        try {
+            await setItem(EMAIL_KEY, e);
+            const res = await hasPin(e);
+            if (res?.has_pin) {
+                const localPin = await getItem(PIN_KEY);
+                const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
+                const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
+                setCanBio(!!localPin && hw && enrolled);
+                setSession('loginPin');
+            } else {
+                setSession('loginPassword');
+            }
+        } catch {
+            setAuthError('No se pudo conectar con el servidor');
+        } finally {
+            setBusy(false);
+        }
+    }
+
+    // Paso 2a: primer ingreso con contraseña temporal → crear PIN.
+    async function onLoginPassword(password) {
         setAuthError(null); setBusy(true);
         try {
             await login(email, password);
-            const pin = await getItem(PIN_KEY);
-            setSession(pin ? 'active' : 'createPin');
+            setSession('createPin');
         } catch (e) {
             setAuthError(e.message || 'No se pudo iniciar sesión');
         } finally {
@@ -162,18 +191,39 @@ export default function App() {
     async function onPin(mode, value) {
         if (mode === 'create') { setPinDraft(value); setAuthError(null); setSession('confirmPin'); }
         else if (mode === 'confirm') {
-            if (value === pinDraft) { await setItem(PIN_KEY, value); setSession('active'); }
-            else { setAuthError(t('pinIncorrecto')); setSession('createPin'); }
-        } else if (mode === 'unlock') {
-            const stored = await getItem(PIN_KEY);
-            if (value === stored) { setAuthError(null); setSession('active'); }
-            else setAuthError(t('pinIncorrecto'));
+            if (value !== pinDraft) { setAuthError(t('pinIncorrecto')); setSession('createPin'); return; }
+            setBusy(true);
+            try {
+                await setPinRemote(value);     // guarda el PIN en la base
+                await setItem(PIN_KEY, value); // y local, para la biometría en este teléfono
+                setAuthError(null); setSession('active');
+            } catch {
+                setAuthError('No se pudo guardar el PIN'); setSession('createPin');
+            } finally { setBusy(false); }
+        } else if (mode === 'login') {
+            setBusy(true);
+            try {
+                await loginPin(email, value);  // login con email + PIN
+                await setItem(PIN_KEY, value); // recuerda el PIN local (biometría)
+                setAuthError(null); setSession('active');
+            } catch (e) {
+                setAuthError(e.message || t('pinIncorrecto'));
+            } finally { setBusy(false); }
         }
     }
 
+    // Biometría: usa el PIN guardado localmente para entrar sin tipearlo.
     async function onBio() {
-        const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Desbloquear Fichada' });
-        if (r.success) setSession('active');
+        try {
+            const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Ingresar a Fichada' });
+            if (!r.success) return;
+            const localPin = await getItem(PIN_KEY);
+            if (!localPin) return;
+            await loginPin(email, localPin);
+            setSession('active');
+        } catch (e) {
+            setAuthError(e.message || t('pinIncorrecto'));
+        }
     }
 
     async function doAction(kind) {
@@ -218,14 +268,16 @@ export default function App() {
     })();
 
     let content;
-    if (session === 'login') {
-        content = <LoginScreen t={t} onLogin={onLogin} error={authError} busy={busy} />;
+    if (session === 'emailEntry') {
+        content = <EmailScreen t={t} onContinue={onContinueEmail} error={authError} busy={busy} initialEmail={email} />;
+    } else if (session === 'loginPassword') {
+        content = <PasswordScreen t={t} email={email} onLogin={onLoginPassword} onBack={() => { setAuthError(null); setSession('emailEntry'); }} error={authError} busy={busy} />;
     } else if (session === 'createPin') {
         content = <PinScreen t={t} mode="create" error={authError} onComplete={(p) => onPin('create', p)} />;
     } else if (session === 'confirmPin') {
         content = <PinScreen t={t} mode="confirm" error={authError} onComplete={(p) => onPin('confirm', p)} />;
-    } else if (session === 'unlock') {
-        content = <PinScreen t={t} mode="unlock" name={name} error={authError} onComplete={(p) => onPin('unlock', p)} onBio={IS_WEB ? undefined : onBio} />;
+    } else if (session === 'loginPin') {
+        content = <PinScreen t={t} mode="login" email={email} error={authError} onComplete={(p) => onPin('login', p)} onBio={(canBio && !IS_WEB) ? onBio : undefined} onBack={() => { setAuthError(null); setSession('emailEntry'); }} />;
     } else if (view === 'history') {
         content = <HistoryScreen t={t} lang={LANG} onBack={() => setView('clock')} />;
     } else if (prevDayOpen) {

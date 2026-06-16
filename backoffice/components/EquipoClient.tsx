@@ -54,6 +54,9 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
                                         <td className="td" style={{ textAlign: 'right' }}>
                                             <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
                                                 <button title="Editar" onClick={() => setEditing(e)} style={iconBtn}>{Ic.edit({ size: 16 })}</button>
+                                                <button title="Resetear PIN" disabled={busy}
+                                                    onClick={() => action(() => px(`/employees/admin/${e.id}/reset-pin`, { method: 'POST', body: '{}' }))}
+                                                    style={iconBtn}>{Ic.lock({ size: 16 })}</button>
                                                 <button title="Revocar sesión (kill switch)" disabled={busy}
                                                     onClick={() => action(() => px(`/employees/admin/${e.id}/kill-switch`, { method: 'POST', body: '{}' }))}
                                                     style={{ ...iconBtn, color: 'var(--warn)' }}>{Ic.power({ size: 16 })}</button>

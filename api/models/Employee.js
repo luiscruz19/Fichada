@@ -74,6 +74,22 @@ const Employee = sequelize.define('employees', {
         },
         comment: 'active = operativo; inactive = baja'
     },
+    pin_hash: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
+        comment: 'Hash bcrypt del PIN de acceso rápido (login con email + PIN). NULL = sin PIN aún'
+    },
+    pin_attempts: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+        comment: 'Intentos fallidos de PIN consecutivos (para el bloqueo)'
+    },
+    pin_locked_until: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Bloqueo temporal del login por PIN tras varios intentos fallidos'
+    },
     created_by: {
         type: DataTypes.INTEGER,
         allowNull: true,

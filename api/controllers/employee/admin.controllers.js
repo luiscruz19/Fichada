@@ -141,6 +141,20 @@ export async function reactivateEmployee(req, res) {
     }
 }
 
+// ==================== RESETEAR PIN ====================
+// Borra el PIN del empleado: en el próximo ingreso vuelve a entrar con su contraseña
+// y configura un PIN nuevo.
+export async function resetPin(req, res) {
+    try {
+        const employee = await Employee.findByPk(req.params.id);
+        if (!employee) return res.status(404).json(errorMessage({ message: 'Empleado no encontrado' }));
+        await employee.update({ pin_hash: null, pin_attempts: 0, pin_locked_until: null });
+        return res.status(200).json(successMessage({ message: 'PIN reseteado' }));
+    } catch (error) {
+        return res.status(500).json(errorMessage({ message: 'Error al resetear el PIN', extra: { error: error.message } }));
+    }
+}
+
 // ==================== KILL SWITCH (revocar sesión/dispositivos) ====================
 export async function killSwitch(req, res) {
     const transaction = await sequelize.transaction();
