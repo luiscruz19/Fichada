@@ -8,9 +8,19 @@
         "orientation": "portrait",
         "userInterfaceStyle": "light",
         "backgroundColor": "#fafaf9",
+        "icon": "./assets/icon-512.png",
+        "splash": {
+            "image": "./assets/icon-512.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#fafaf9"
+        },
         "assetBundlePatterns": ["**/*"],
         "android": {
             "package": "com.fichada.app",
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/icon-512.png",
+                "backgroundColor": "#fafaf9"
+            },
             "permissions": [
                 "ACCESS_FINE_LOCATION",
                 "ACCESS_COARSE_LOCATION",
