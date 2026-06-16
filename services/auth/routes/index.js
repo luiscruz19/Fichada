@@ -50,4 +50,20 @@ api.get('/generate-token', [validateClient], async (req, res) => {
     }));
 });
 
+// Internal: regenera la contraseña de un user (server-to-server, protegido por SECRET_KEY).
+// Lo usa el api para "regenerar acceso" de un empleado que perdió su contraseña temporal.
+api.post('/set-password', [validateClient], async (req, res) => {
+    const { user_id, password } = req.body || {};
+    if (!user_id || !password) {
+        return res.status(400).json(errorMessage({ message: 'user_id y password requeridos' }));
+    }
+    const user = await User.findByPk(user_id);
+    if (!user) {
+        return res.status(400).json(errorMessage({ message: 'User not found' }));
+    }
+    const hash = await User.prototype.generateHash(password);
+    await User.update({ password: hash, verified: 1 }, { where: { id: user_id } });
+    return res.status(200).json(successMessage({ message: 'Password actualizada' }));
+});
+
 export default api;
