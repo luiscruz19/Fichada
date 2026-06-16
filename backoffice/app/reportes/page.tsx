@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getToken, apiGetJson } from '@/lib/api';
+import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { Ic } from '@/components/icons';
 import { Avatar, initials } from '@/components/ui';
@@ -28,7 +28,7 @@ export default async function ReportesPage() {
 
     return (
         <div className="admin">
-            <Sidebar />
+            <Sidebar adminName={await getAdminName()} />
             <main style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh', overflowY: 'auto' }}>
                 <div style={{ padding: '20px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div>

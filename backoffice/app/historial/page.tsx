@@ -1,5 +1,5 @@
 import { redirect } from 'next/navigation';
-import { getToken, apiGetJson } from '@/lib/api';
+import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { HistorialClient } from '@/components/HistorialClient';
 import { fmtTime, fmtDateShort, secondsToHHMM, initials } from '@/lib/format';
@@ -41,7 +41,7 @@ export default async function HistorialPage() {
 
     return (
         <div className="admin">
-            <Sidebar />
+            <Sidebar adminName={await getAdminName()} />
             <HistorialClient rows={rows} counts={counts} exportBase={`${BASE_PATH}/api/export`} />
         </div>
     );

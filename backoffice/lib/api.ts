@@ -44,3 +44,11 @@ export async function apiGetJson<T = any>(path: string): Promise<T | null> {
         return null;
     }
 }
+
+// Nombre real del admin logueado (para el sidebar), desde su perfil.
+export async function getAdminName(): Promise<string> {
+    const json = await apiGetJson<{ data: { first_name: string; last_name: string } }>('/employees/employee/me');
+    const d = json?.data;
+    const full = d ? `${d.first_name || ''} ${d.last_name || ''}`.trim() : '';
+    return full || 'Administrador';
+}
