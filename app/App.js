@@ -4,6 +4,7 @@ import { getItem, setItem, IS_WEB } from './src/storage';
 import * as Location from 'expo-location';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 import { C } from './src/theme';
 import { makeT } from './src/i18n';
@@ -16,10 +17,14 @@ import BlockedShiftScreen from './src/screens/BlockedShiftScreen';
 import NotisSheet from './src/screens/NotisSheet';
 import { LoginScreen, PinScreen } from './src/screens/AccessScreens';
 
-// Mostrar las push entrantes también con la app abierta.
-Notifications.setNotificationHandler({
-    handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }),
-});
+// Push: Expo Go (SDK 53+) removió las push de Android. Solo configuramos el handler
+// fuera de Expo Go (en el build EAS sí funcionan). Evita el error en consola de Expo Go.
+const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
+if (!IS_EXPO_GO) {
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }),
+    });
+}
 
 const PIN_KEY = 'fichada_pin';
 const LANG = 'es';
