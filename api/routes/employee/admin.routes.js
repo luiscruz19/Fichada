@@ -6,7 +6,8 @@ import {
     updateEmployee,
     deactivateEmployee,
     reactivateEmployee,
-    killSwitch
+    killSwitch,
+    resetPin
 } from '../../controllers/employee/admin.controllers.js';
 import {
     createEmployeeValidation,
@@ -24,5 +25,6 @@ admin.put('/:id', validate(updateEmployeeValidation), updateEmployee);
 admin.patch('/:id/deactivate', validate(idParamValidation), deactivateEmployee);
 admin.patch('/:id/reactivate', validate(idParamValidation), reactivateEmployee);
 admin.post('/:id/kill-switch', validate(idParamValidation), killSwitch);
+admin.post('/:id/reset-pin', validate(idParamValidation), resetPin);
 
 export default admin;
