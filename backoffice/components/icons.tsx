@@ -37,4 +37,5 @@ export const Ic = {
     settings: (p: P = {}) => <Icon {...p}><circle cx="12" cy="12" r="3" /><path d="M12 2.5v3M12 18.5v3M21.5 12h-3M5.5 12h-3M18 6l-2 2M8 16l-2 2M18 18l-2-2M8 8 6 6" /></Icon>,
     chart: (p: P = {}) => <Icon {...p}><path d="M4 4v16h16" /><path d="M8 14v3M12 9v8M16 12v5" /></Icon>,
     arrowLeft: (p: P = {}) => <Icon {...p}><path d="M19 12H6M11 6l-5 6 5 6" /></Icon>,
+    key: (p: P = {}) => <Icon {...p}><circle cx="8" cy="15" r="4" /><path d="M10.85 12.15 20 3M18 5l2 2M15 8l2 2" /></Icon>,
 };
