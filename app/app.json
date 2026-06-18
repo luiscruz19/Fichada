@@ -19,6 +19,7 @@
     ],
     "android": {
       "package": "com.fichada.app",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon-512.png",
         "backgroundColor": "#fafaf9"
