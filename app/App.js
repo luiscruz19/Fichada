@@ -101,16 +101,47 @@ export default function App() {
     const [notis, setNotis] = useState([]);
     const [notisOpen, setNotisOpen] = useState(false);
 
-    // boot: si hay sesión guardada entra directo; si no, arranca pidiendo el email.
+    // Lleva a la pantalla de ingreso "correcta": si este teléfono ya tiene una cuenta
+    // con PIN, va DIRECTO a pedir el PIN (no vuelve a pedir el email). Solo muestra la
+    // pantalla de email en el primer uso (sin email guardado) o si no se puede resolver.
+    const goToLogin = useCallback(async () => {
+        const last = await getItem(EMAIL_KEY);
+        if (!last) { setSession('emailEntry'); return; }
+        setEmail(last);
+        const localPin = await getItem(PIN_KEY);
+        const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
+        const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
+        setCanBio(!!localPin && hw && enrolled);
+        // PIN ya configurado en este teléfono → directo al PIN (offline-friendly).
+        if (localPin) { setSession('loginPin'); return; }
+        // Sin PIN local: preguntamos al servidor si la cuenta ya tiene PIN.
+        try {
+            const res = await hasPin(last);
+            setSession(res?.has_pin ? 'loginPin' : 'loginPassword');
+        } catch {
+            setSession('emailEntry');
+        }
+    }, []);
+
+    // boot: si hay sesión guardada entra directo; si no, va al ingreso recordando el email.
     useEffect(() => {
         (async () => {
             const tk = await loadToken();
             if (tk) { setSession('active'); return; }
-            const last = await getItem(EMAIL_KEY);
-            if (last) setEmail(last);
-            setSession('emailEntry');
+            await goToLogin();
         })();
-    }, []);
+    }, [goToLogin]);
+
+    // Al llegar a la pantalla de PIN con biometría disponible, la disparamos sola
+    // (como las apps de banco): si la cancelás, queda el teclado de PIN.
+    const bioTried = useRef(false);
+    useEffect(() => {
+        if (session === 'loginPin' && canBio && !IS_WEB && !bioTried.current) {
+            bioTried.current = true;
+            onBio();
+        }
+        if (session !== 'loginPin') bioTried.current = false;
+    }, [session, canBio]);
 
     const refresh = useCallback(async () => {
         try {
@@ -119,9 +150,9 @@ export default function App() {
             setEstado(STATUS_MAP[data.status] || 'fuera');
             setShift(data.shift || null);
         } catch (e) {
-            if (e.status === 401) { await clearToken(); setSession('emailEntry'); }
+            if (e.status === 401) { await clearToken(); await goToLogin(); }
         }
-    }, []);
+    }, [goToLogin]);
 
     // Perfil real del empleado (nombre + objetivo de jornada), desde el backend.
     const loadProfile = useCallback(async () => {
