@@ -6,12 +6,15 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "development"
     },
     "preview-test": {
       "distribution": "internal",
       "channel": "preview-test",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://fichada.sda.ovh/api"
       }
@@ -19,7 +22,9 @@
     "preview-local": {
       "distribution": "internal",
       "channel": "preview-local",
-      "android": { "buildType": "apk" },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "http://192.168.100.8:4000"
       }
@@ -27,7 +32,9 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
-      "android": { "buildType": "app-bundle" },
+      "android": {
+        "buildType": "app-bundle"
+      },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://fichada.sda.ovh/api"
       }
