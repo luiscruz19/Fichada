@@ -24,10 +24,20 @@ async function getPushToken() {
     if (IS_EXPO_GO) return null; // push no disponible en Expo Go
     const Notifications = require('expo-notifications'); // lazy: solo fuera de Expo Go
     try {
+        // Android requiere un canal de notificaciones para mostrar las push (API 26+).
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('default', {
+                name: 'Avisos de Fichada',
+                importance: Notifications.AndroidImportance.DEFAULT,
+            });
+        }
         let { status } = await Notifications.getPermissionsAsync();
         if (status !== 'granted') status = (await Notifications.requestPermissionsAsync()).status;
         if (status !== 'granted') return null;
-        const tok = await Notifications.getExpoPushTokenAsync();
+        // En builds EAS standalone el token se firma con el projectId del proyecto.
+        const projectId =
+            Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+        const tok = await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined);
         return tok?.data || null;
     } catch {
         return null;
