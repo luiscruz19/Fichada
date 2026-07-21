@@ -61,6 +61,36 @@ const Setting = sequelize.define('settings', {
         allowNull: false,
         defaultValue: true,
         comment: 'Permite al empleado solicitar correcciones'
+    },
+    reminders_enabled: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true,
+        comment: 'Activa los recordatorios push de fichada (entrada/salida)'
+    },
+    reminder_checkin_start: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 9,
+        comment: 'Hora (local) desde la que se recuerda fichar la entrada'
+    },
+    reminder_checkin_end: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 13,
+        comment: 'Hora (local) hasta la que se recuerda fichar la entrada'
+    },
+    reminder_checkout_start: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 18,
+        comment: 'Hora (local) desde la que se recuerda fichar la salida'
+    },
+    reminder_checkout_end: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 20,
+        comment: 'Hora (local) hasta la que se recuerda fichar la salida'
     }
 }, {
     tableName: 'settings',

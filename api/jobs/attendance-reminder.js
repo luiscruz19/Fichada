@@ -73,11 +73,20 @@ async function notify(employeeId, type, title, body, extra = {}) {
  */
 export async function runAttendanceReminder() {
     const p = localParts();
-    const inCheckin = p.hour >= CHECKIN_START && p.hour < CHECKIN_END;
-    const inCheckout = p.hour >= CHECKOUT_START && p.hour < CHECKOUT_END;
+    const setting = await Setting.findOne();
+
+    // Los horarios y el on/off se configuran en Ajustes; si no hay valor, usamos los
+    // defaults del negocio (entrada 09–13, salida 18–20).
+    if (setting && setting.reminders_enabled === false) return 0;
+    const ciStart = setting?.reminder_checkin_start ?? CHECKIN_START;
+    const ciEnd = setting?.reminder_checkin_end ?? CHECKIN_END;
+    const coStart = setting?.reminder_checkout_start ?? CHECKOUT_START;
+    const coEnd = setting?.reminder_checkout_end ?? CHECKOUT_END;
+
+    const inCheckin = p.hour >= ciStart && p.hour < ciEnd;
+    const inCheckout = p.hour >= coStart && p.hour < coEnd;
     if (!inCheckin && !inCheckout) return 0;
 
-    const setting = await Setting.findOne();
     const { start, end } = todayRangeUtc(p);
 
     const employees = await Employee.findAll({ where: { status: 'active', role: 'employee' } });
