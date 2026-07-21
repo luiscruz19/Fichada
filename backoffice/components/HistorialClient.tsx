@@ -7,6 +7,7 @@ import { ChipTone, Avatar } from './ui';
 import type { Row } from '@/lib/types';
 import { fmtTime } from '@/lib/format';
 import { BASE_PATH } from '@/lib/config';
+import { FichadaMap, type FichadaPoint } from './FichadaMap';
 
 const ESTADO = {
     ok: { tone: 'ok' as const, label: 'Completa', icon: Ic.check },
@@ -120,9 +121,15 @@ function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
         }
     }
 
-    const loc = shift.check_in_lat != null && shift.check_in_lng != null
-        ? `${shift.check_in_lat}, ${shift.check_in_lng}` : 'Sin ubicación';
     const requestedOut = req?.requested_check_out ? fmtTime(req.requested_check_out) : null;
+
+    const locPoints: FichadaPoint[] = [];
+    if (shift.check_in_lat != null && shift.check_in_lng != null) {
+        locPoints.push({ lat: Number(shift.check_in_lat), lng: Number(shift.check_in_lng), kind: 'in', label: `Entrada ${row.in || ''}`.trim() });
+    }
+    if (shift.check_out_lat != null && shift.check_out_lng != null) {
+        locPoints.push({ lat: Number(shift.check_out_lat), lng: Number(shift.check_out_lng), kind: 'out', label: `Salida ${row.out || ''}`.trim() });
+    }
 
     return (
         <>
@@ -156,10 +163,7 @@ function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
 
                     <div style={{ marginTop: 16 }}>
                         <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ubicación de la marca</label>
-                        <div className="ph-stripe" style={{ height: 120, borderRadius: 12, marginTop: 6, border: '1px solid var(--hairline)', position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span className="placeholder-note">{loc}</span>
-                            <span style={{ position: 'absolute', left: '46%', top: '52%', color: 'var(--ok)' }}>{Ic.pin({ size: 26 })}</span>
-                        </div>
+                        <FichadaMap points={locPoints} />
                     </div>
 
                     <div style={{ marginTop: 20 }}>
