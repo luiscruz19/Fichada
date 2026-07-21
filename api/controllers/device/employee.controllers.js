@@ -2,8 +2,12 @@ import Device from '../../models/Device.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
 // ==================== REGISTRAR / ACTIVAR DISPOSITIVO ====================
-// Device-binding estricto: la cuenta queda atada al teléfono donde se activó.
-// Si hay otro dispositivo activo con distinto uuid, se requiere reactivación del admin.
+// Binding de "un dispositivo activo por cuenta", con RE-VINCULACIÓN AUTOMÁTICA:
+// este endpoint solo se alcanza con un JWT válido (login con email + PIN correcto),
+// así que la identidad ya está probada. Si el empleado entra desde un teléfono nuevo
+// (p.ej. reinstaló la app → uuid nuevo), se revoca el dispositivo anterior y se activa
+// el nuevo automáticamente, sin necesidad de que el admin intervenga. El único caso
+// que sigue bloqueado es un uuid ya vinculado a OTRA cuenta.
 export async function registerDevice(req, res) {
     try {
         const { device_uuid, platform, model, push_token } = req.body;
@@ -17,27 +21,26 @@ export async function registerDevice(req, res) {
                     message: 'Este dispositivo ya está vinculado a otra cuenta.'
                 }));
             }
-            if (existing.status === 'revoked') {
-                return res.status(403).json(errorMessage({
-                    message: 'Este dispositivo fue revocado. Contactá al administrador para reactivarlo.'
-                }));
-            }
+            // Mismo teléfono: lo reactivamos si estaba revocado y actualizamos sus datos.
             await existing.update({
                 platform: platform ?? existing.platform,
                 model: model ?? existing.model,
                 push_token: push_token ?? existing.push_token,
+                status: 'active',
+                activated_at: existing.status === 'active' ? existing.activated_at : new Date(),
+                revoked_at: null,
+                revoked_by: null,
                 last_seen_at: new Date(),
             });
-            return res.status(200).json(successMessage({ message: 'Dispositivo ya vinculado', extra: { data: existing } }));
+            return res.status(200).json(successMessage({ message: 'Dispositivo vinculado', extra: { data: existing } }));
         }
 
-        // ¿Tiene otro dispositivo activo? (binding estricto: uno a la vez)
-        const otherActive = await Device.findOne({ where: { employee_id: employeeId, status: 'active' } });
-        if (otherActive) {
-            return res.status(409).json(errorMessage({
-                message: 'Ya tenés un dispositivo vinculado. Requiere reactivación del administrador para cambiarlo.'
-            }));
-        }
+        // Teléfono nuevo: revocamos cualquier dispositivo activo anterior de esta cuenta
+        // (re-vinculación automática tras login válido) y activamos este.
+        await Device.update(
+            { status: 'revoked', revoked_at: new Date(), revoked_by: null },
+            { where: { employee_id: employeeId, status: 'active' } }
+        );
 
         const device = await Device.create({
             employee_id: employeeId,
