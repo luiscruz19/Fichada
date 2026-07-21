@@ -24,6 +24,12 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
             location_required: !!s.location_required,
             allow_breaks: !!s.allow_breaks,
             allow_correction_requests: !!s.allow_correction_requests,
+            work_days: Array.isArray(s.work_days) ? s.work_days : null,
+            reminders_enabled: s.reminders_enabled !== false,
+            reminder_checkin_start: Number(s.reminder_checkin_start ?? 9),
+            reminder_checkin_end: Number(s.reminder_checkin_end ?? 13),
+            reminder_checkout_start: Number(s.reminder_checkout_start ?? 18),
+            reminder_checkout_end: Number(s.reminder_checkout_end ?? 20),
         };
         const r = await px('/settings/admin', { method: 'PUT', body: JSON.stringify(body) });
         setBusy(false);
@@ -52,6 +58,24 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
                     <Toggle label="Ubicación obligatoria para fichar" value={!!s.location_required} onChange={(v) => set('location_required', v)} />
                     <Toggle label="Permitir pausas (salir / volver)" value={!!s.allow_breaks} onChange={(v) => set('allow_breaks', v)} />
                     <Toggle label="Permitir solicitudes de corrección" value={!!s.allow_correction_requests} onChange={(v) => set('allow_correction_requests', v)} />
+                </Card>
+
+                <Card title="Recordatorios push">
+                    <Toggle label="Enviar recordatorios de fichada" value={s.reminders_enabled !== false} onChange={(v) => set('reminders_enabled', v)} />
+                    <p style={{ fontSize: 12.5, color: 'var(--ink-3)', lineHeight: 1.5, margin: '10px 0 14px' }}>
+                        Si un empleado no fichó la entrada, se le recuerda cada 30 min dentro de la franja de entrada.
+                        Si dejó la jornada abierta, se le recuerda la salida dentro de la franja de salida. Solo en días laborales.
+                    </p>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, opacity: s.reminders_enabled !== false ? 1 : 0.5 }}>
+                        <Field label="Entrada · desde (hora)"><input type="number" min={0} max={23} value={s.reminder_checkin_start ?? 9} onChange={(e) => set('reminder_checkin_start', e.target.value)} style={inp} /></Field>
+                        <Field label="Entrada · hasta (hora)"><input type="number" min={0} max={24} value={s.reminder_checkin_end ?? 13} onChange={(e) => set('reminder_checkin_end', e.target.value)} style={inp} /></Field>
+                        <Field label="Salida · desde (hora)"><input type="number" min={0} max={23} value={s.reminder_checkout_start ?? 18} onChange={(e) => set('reminder_checkout_start', e.target.value)} style={inp} /></Field>
+                        <Field label="Salida · hasta (hora)"><input type="number" min={0} max={24} value={s.reminder_checkout_end ?? 20} onChange={(e) => set('reminder_checkout_end', e.target.value)} style={inp} /></Field>
+                    </div>
+                    <div style={{ marginTop: 16 }}>
+                        <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-2)', display: 'block', marginBottom: 8 }}>Días laborales</label>
+                        <WorkDays value={Array.isArray(s.work_days) ? s.work_days : ['mon', 'tue', 'wed', 'thu', 'fri']} onChange={(v) => set('work_days', v)} />
+                    </div>
                 </Card>
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -131,6 +155,31 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
             <button onClick={() => onChange(!value)} style={{ width: 44, height: 26, borderRadius: 999, background: value ? 'var(--accent)' : 'var(--surface-3)', position: 'relative', transition: 'background 0.15s' }}>
                 <span style={{ position: 'absolute', top: 3, left: value ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: 'var(--shadow-1)', transition: 'left 0.15s' }} />
             </button>
+        </div>
+    );
+}
+
+const DAYS: { key: string; label: string }[] = [
+    { key: 'mon', label: 'Lun' }, { key: 'tue', label: 'Mar' }, { key: 'wed', label: 'Mié' },
+    { key: 'thu', label: 'Jue' }, { key: 'fri', label: 'Vie' }, { key: 'sat', label: 'Sáb' }, { key: 'sun', label: 'Dom' },
+];
+
+function WorkDays({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+    const toggle = (k: string) => onChange(value.includes(k) ? value.filter((d) => d !== k) : [...value, k]);
+    return (
+        <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap' }}>
+            {DAYS.map((d) => {
+                const on = value.includes(d.key);
+                return (
+                    <button key={d.key} type="button" onClick={() => toggle(d.key)}
+                        style={{
+                            minWidth: 46, height: 38, borderRadius: 10, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+                            border: `1.5px solid ${on ? 'var(--accent)' : 'var(--hairline-2)'}`,
+                            background: on ? 'var(--accent)' : 'var(--surface)',
+                            color: on ? 'var(--on-accent)' : 'var(--ink-3)',
+                        }}>{d.label}</button>
+                );
+            })}
         </div>
     );
 }

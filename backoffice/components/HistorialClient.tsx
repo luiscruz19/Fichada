@@ -8,28 +8,35 @@ import type { Row } from '@/lib/types';
 import { fmtTime } from '@/lib/format';
 import { BASE_PATH } from '@/lib/config';
 import { FichadaMap, type FichadaPoint } from './FichadaMap';
+import { DateRangePicker } from './DateRangePicker';
 
 const ESTADO = {
     ok: { tone: 'ok' as const, label: 'Completa', icon: Ic.check },
     open: { tone: 'warn' as const, label: 'Jornada abierta', icon: Ic.alert },
 };
 
-export function HistorialClient({ rows, counts, exportBase }: { rows: Row[]; counts: { open: number; req: number }; exportBase: string }) {
+export function HistorialClient({ rows, counts, exportBase, exportQuery = '', rangeLabel }: { rows: Row[]; counts: { open: number; req: number }; exportBase: string; exportQuery?: string; rangeLabel?: string }) {
     const [sel, setSel] = useState<Row | null>(null);
+    const eq = exportQuery ? `&${exportQuery}` : '';
 
     return (
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: '100vh' }}>
             {/* header */}
-            <div style={{ padding: '20px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+            <div style={{ padding: '20px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: 23, fontWeight: 700, letterSpacing: '-0.02em' }}>Historial</h1>
-                    <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--ink-3)' }}>Fichadas del equipo · hora oficial del servidor (UTC−3)</p>
+                    <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--ink-3)' }}>Fichadas del equipo{rangeLabel ? <> · <strong style={{ color: 'var(--ink-2)' }}>{rangeLabel}</strong></> : ''} · UTC−3</p>
                 </div>
                 <div style={{ display: 'flex', gap: 9 }}>
-                    <a className="seg" href={`${exportBase}?format=csv`}>{Ic.doc({ size: 16 })}CSV</a>
-                    <a className="seg" href={`${exportBase}?format=xlsx`}>{Ic.doc({ size: 16 })}Excel</a>
-                    <a className="seg" href={`${exportBase}?format=pdf`}>{Ic.doc({ size: 16 })}PDF</a>
+                    <a className="seg" href={`${exportBase}?format=csv${eq}`}>{Ic.doc({ size: 16 })}CSV</a>
+                    <a className="seg" href={`${exportBase}?format=xlsx${eq}`}>{Ic.doc({ size: 16 })}Excel</a>
+                    <a className="seg" href={`${exportBase}?format=pdf${eq}`}>{Ic.doc({ size: 16 })}PDF</a>
                 </div>
+            </div>
+
+            {/* filtro de fechas */}
+            <div style={{ padding: '14px 28px 0' }}>
+                <DateRangePicker defaultPreset="month" />
             </div>
 
             {/* casos a revisar */}

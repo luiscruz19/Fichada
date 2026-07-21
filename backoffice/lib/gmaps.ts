@@ -15,7 +15,7 @@ export function ensureGoogleMaps(): Promise<any> {
         if (!key) throw new Error('nokey');
         await new Promise<void>((resolve, reject) => {
             const s = document.createElement('script');
-            s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly`;
+            s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly&libraries=visualization`;
             s.async = true;
             s.onload = () => resolve();
             s.onerror = () => reject(new Error('load'));

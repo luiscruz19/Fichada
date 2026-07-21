@@ -31,6 +31,11 @@ export type Setting = {
     location_required: boolean;
     allow_breaks: boolean;
     allow_correction_requests: boolean;
+    reminders_enabled: boolean;
+    reminder_checkin_start: number;
+    reminder_checkin_end: number;
+    reminder_checkout_start: number;
+    reminder_checkout_end: number;
 };
 
 export type Site = {
