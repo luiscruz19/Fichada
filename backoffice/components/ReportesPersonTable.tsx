@@ -12,8 +12,16 @@ function punctColor(pct: number | null): string {
 }
 
 // Tabla por persona con filas clickeables → reporte individual del empleado.
-export function ReportesPersonTable({ rows }: { rows: PersonMetric[] }) {
+export function ReportesPersonTable({ rows, range }: { rows: PersonMetric[]; range?: { from: string | null; to: string | null } }) {
     const router = useRouter();
+
+    function href(id: number): string {
+        const p = new URLSearchParams();
+        if (range?.from) p.set('from', range.from);
+        if (range?.to) p.set('to', range.to);
+        const qs = p.toString();
+        return `/reportes/${id}${qs ? `?${qs}` : ''}`;
+    }
 
     return (
         <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-1)' }}>
@@ -29,7 +37,7 @@ export function ReportesPersonTable({ rows }: { rows: PersonMetric[] }) {
                             <tr><td className="td" colSpan={8} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>Sin datos: todavía no hay fichadas.</td></tr>
                         )}
                         {rows.map((r) => (
-                            <tr key={r.id} className="row" style={{ cursor: 'pointer' }} onClick={() => router.push(`/reportes/${r.id}`)}>
+                            <tr key={r.id} className="row" style={{ cursor: 'pointer' }} onClick={() => router.push(href(r.id))}>
                                 <td className="td"><div style={{ display: 'flex', alignItems: 'center', gap: 9, fontWeight: 600 }}><Avatar ini={initials(r.name)} size={28} />{r.name}</div></td>
                                 <td className="td tnum" style={{ textAlign: 'right' }}>{r.count}</td>
                                 <td className="td tnum" style={{ textAlign: 'right', fontWeight: 700 }}>{secondsToHHMM(r.seconds)}</td>

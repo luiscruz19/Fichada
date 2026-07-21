@@ -1,6 +1,31 @@
 import type { Shift } from './types';
+import { addDaysKey, daysBetween, fmtKeyShort, todayKeyAR } from './daterange';
 
 export const TZ = 'America/Argentina/Buenos_Aires';
+
+export type Range = { fromKey: string | null; toKey: string | null };
+
+// Lista de claves de día a graficar: el rango elegido (cap 62 días) o, sin rango,
+// los últimos 14 días.
+function buildDayKeys(range?: Range): string[] {
+    let fromK: string, toK: string;
+    if (range?.fromKey && range?.toKey) {
+        const total = daysBetween(range.fromKey, range.toKey);
+        toK = range.toKey;
+        fromK = total <= 62 ? range.fromKey : addDaysKey(range.toKey, -61);
+    } else {
+        toK = todayKeyAR();
+        fromK = addDaysKey(toK, -13);
+    }
+    const days: string[] = [];
+    let k = fromK;
+    for (let i = 0; i < 400; i++) {
+        days.push(k);
+        if (k === toK) break;
+        k = addDaysKey(k, 1);
+    }
+    return days;
+}
 
 // Partes de un instante en hora local (AR): hora, minuto y clave de fecha YYYY-MM-DD.
 export function localParts(iso: string): { h: number; m: number; dateKey: string; dow: number } {
@@ -64,7 +89,7 @@ export type Metrics = {
 // este server component, así que usamos un margen razonable por defecto.
 const PUNCTUAL_TOLERANCE_MIN = 5;
 
-export function computeMetrics(shifts: Shift[]): Metrics {
+export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
     const tk = todayKey();
 
     // Semana: set de las últimas 7 claves de fecha (incluyendo hoy).
@@ -83,19 +108,12 @@ export function computeMetrics(shifts: Shift[]): Metrics {
     const allCheckout: number[] = [];
     let punctOk = 0, punctTotal = 0;
 
-    // Serie diaria: últimos 14 días.
+    // Serie diaria: el rango elegido (cap 62 días) o los últimos 14 días.
     const dailyMap = new Map<string, number>();
     const dayLabels: { key: string; label: string }[] = [];
-    {
-        const base = new Date();
-        const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
-        for (let i = 13; i >= 0; i--) {
-            const d = new Date(base.getTime() - i * 86400000);
-            const lp = localParts(d.toISOString());
-            dailyMap.set(lp.dateKey, 0);
-            const [, , dd] = lp.dateKey.split('-');
-            dayLabels.push({ key: lp.dateKey, label: `${Number(dd)} ${MES[d.getMonth()]}` });
-        }
+    for (const key of buildDayKeys(range)) {
+        dailyMap.set(key, 0);
+        dayLabels.push({ key, label: fmtKeyShort(key) });
     }
 
     for (const s of shifts) {
