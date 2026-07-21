@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { BASE_PATH } from '@/lib/config';
+import { ensureGoogleMaps, circleIcon, MARK_COLOR as COLOR } from '@/lib/gmaps';
 
 export type MapPoint = {
     lat: number;
@@ -11,24 +11,6 @@ export type MapPoint = {
     time: string;
     shiftId: number;
 };
-
-// Carga el script de Google Maps una sola vez (aunque haya varias instancias).
-let mapsPromise: Promise<void> | null = null;
-function loadGoogleMaps(key: string): Promise<void> {
-    if (typeof window !== 'undefined' && (window as any).google?.maps) return Promise.resolve();
-    if (mapsPromise) return mapsPromise;
-    mapsPromise = new Promise((resolve, reject) => {
-        const s = document.createElement('script');
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&v=weekly`;
-        s.async = true;
-        s.onload = () => resolve();
-        s.onerror = () => reject(new Error('No se pudo cargar Google Maps'));
-        document.head.appendChild(s);
-    });
-    return mapsPromise;
-}
-
-const COLOR = { in: '#16a34a', out: '#dc2626' };
 
 export function MapaClient({ points }: { points: MapPoint[] }) {
     const mapEl = useRef<HTMLDivElement>(null);
@@ -42,12 +24,8 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
         let cancelled = false;
         (async () => {
             try {
-                const res = await fetch(`${BASE_PATH}/api/maps-key`);
-                const { key } = await res.json();
-                if (!key) { setStatus('nokey'); return; }
-                await loadGoogleMaps(key);
+                const g = await ensureGoogleMaps();
                 if (cancelled || !mapEl.current) return;
-                const g = (window as any).google;
                 mapRef.current = new g.maps.Map(mapEl.current, {
                     center: { lat: -31.4, lng: -64.2 },
                     zoom: 5,
@@ -56,8 +34,8 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
                     fullscreenControl: true,
                 });
                 setStatus('ready');
-            } catch {
-                if (!cancelled) setStatus('error');
+            } catch (e: any) {
+                if (!cancelled) setStatus(e?.message === 'nokey' ? 'nokey' : 'error');
             }
         })();
         return () => { cancelled = true; };
@@ -78,14 +56,7 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
             const marker = new g.maps.Marker({
                 position: { lat: p.lat, lng: p.lng },
                 map: mapRef.current,
-                icon: {
-                    path: g.maps.SymbolPath.CIRCLE,
-                    scale: 7,
-                    fillColor: COLOR[p.kind],
-                    fillOpacity: 1,
-                    strokeColor: '#ffffff',
-                    strokeWeight: 2,
-                },
+                icon: circleIcon(g, p.kind),
                 title: `${p.name} · ${p.kind === 'in' ? 'Entrada' : 'Salida'}`,
             });
             marker.addListener('click', () => {

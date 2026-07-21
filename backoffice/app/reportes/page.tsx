@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { Ic } from '@/components/icons';
-import { Avatar, initials } from '@/components/ui';
+import { ReportesPersonTable } from '@/components/ReportesPersonTable';
 import { secondsToHHMM } from '@/lib/format';
 import { computeMetrics, minToHHMM } from '@/lib/metrics';
 import { BASE_PATH } from '@/lib/config';
@@ -65,35 +65,10 @@ export default async function ReportesPage() {
                     </div>
                 </div>
 
-                {/* Métricas por persona */}
+                {/* Métricas por persona (clic para ver el reporte individual) */}
+                <div style={{ padding: '0 28px 6px', fontSize: 12.5, color: 'var(--ink-3)' }}>Reporte por persona · hacé clic en un empleado para ver su detalle</div>
                 <div style={{ padding: '4px 28px 24px' }}>
-                    <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-1)' }}>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
-                                <thead><tr>
-                                    {['Empleado', 'Jornadas', 'Horas', 'Prom./jornada', 'Entrada prom.', 'Puntualidad', 'Abiertas'].map((h, i) => (
-                                        <th key={i} className="th" style={{ paddingTop: 14, textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
-                                    ))}
-                                </tr></thead>
-                                <tbody>
-                                    {m.perPerson.length === 0 && (
-                                        <tr><td className="td" colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>Sin datos: todavía no hay fichadas.</td></tr>
-                                    )}
-                                    {m.perPerson.map((r) => (
-                                        <tr key={r.id} className="row">
-                                            <td className="td"><div style={{ display: 'flex', alignItems: 'center', gap: 9, fontWeight: 600 }}><Avatar ini={initials(r.name)} size={28} />{r.name}</div></td>
-                                            <td className="td tnum" style={{ textAlign: 'right' }}>{r.count}</td>
-                                            <td className="td tnum" style={{ textAlign: 'right', fontWeight: 700 }}>{secondsToHHMM(r.seconds)}</td>
-                                            <td className="td tnum" style={{ textAlign: 'right', color: 'var(--ink-2)' }}>{secondsToHHMM(r.avgSeconds)}</td>
-                                            <td className="td tnum" style={{ textAlign: 'right', color: 'var(--ink-2)' }}>{minToHHMM(r.avgCheckinMin)}</td>
-                                            <td className="td tnum" style={{ textAlign: 'right', color: punctColor(r.punctualPct) }}>{r.punctualPct == null ? '—' : `${r.punctualPct}%`}</td>
-                                            <td className="td tnum" style={{ textAlign: 'right', color: r.open ? 'var(--warn)' : 'var(--ink-3)' }}>{r.open || '—'}</td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <ReportesPersonTable rows={m.perPerson} />
                 </div>
             </main>
         </div>
@@ -103,10 +78,6 @@ export default async function ReportesPage() {
 function punctTone(pct: number | null): 'ok' | 'warn' | undefined {
     if (pct == null) return undefined;
     return pct >= 80 ? 'ok' : 'warn';
-}
-function punctColor(pct: number | null): string {
-    if (pct == null) return 'var(--ink-3)';
-    return pct >= 80 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
 }
 
 function Stat({ label, value, tone }: { label: string; value: string; tone?: 'ok' | 'warn' }) {
