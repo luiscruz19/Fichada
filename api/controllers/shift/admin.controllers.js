@@ -6,7 +6,7 @@ import { successMessage, errorMessage } from '../../utils/messages.js';
 import buildReportRows from '../../services/shift/build-report-rows.js';
 import { toCsv, toXlsx, toPdf } from '../../services/shift/exporters.js';
 
-const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email'];
+const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email', 'expected_check_in', 'target_hours'];
 
 // ==================== LISTAR JORNADAS ====================
 export async function listShifts(req, res) {

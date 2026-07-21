@@ -32,8 +32,9 @@
     "production": {
       "autoIncrement": true,
       "channel": "production",
+      "distribution": "internal",
       "android": {
-        "buildType": "app-bundle"
+        "buildType": "apk"
       },
       "env": {
         "EXPO_PUBLIC_API_URL": "https://fichada.sda.ovh/api"

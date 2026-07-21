@@ -9,6 +9,7 @@ import { BASE_PATH } from '@/lib/config';
 const ITEMS: [string, string, (p?: any) => JSX.Element][] = [
     ['Historial', '/historial', Ic.calendar],
     ['Reportes', '/reportes', Ic.chart],
+    ['Mapa', '/mapa', Ic.pin],
     ['Equipo', '/equipo', Ic.users],
     ['Ajustes', '/ajustes', Ic.settings],
 ];
