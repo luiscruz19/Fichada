@@ -25,11 +25,11 @@ const Notification = sequelize.define('notifications', {
         validate: {
             notNull: { msg: messages.error.notification.fields_empty.type },
             isIn: {
-                args: [['check_in_reminder', 'open_shift_alert']],
+                args: [['check_in_reminder', 'check_out_reminder', 'open_shift_alert']],
                 msg: messages.generic.invalid_enum_value,
             },
         },
-        comment: 'check_in_reminder = recordatorio de fichar; open_shift_alert = olvido de salida'
+        comment: 'check_in_reminder / check_out_reminder = recordatorio de fichar entrada/salida; open_shift_alert = olvido de salida'
     },
     title: {
         type: DataTypes.STRING,
