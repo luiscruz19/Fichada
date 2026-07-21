@@ -20,7 +20,7 @@ const Notification = sequelize.define('notifications', {
         },
     },
     type: {
-        type: DataTypes.ENUM('check_in_reminder', 'open_shift_alert'),
+        type: DataTypes.ENUM('check_in_reminder', 'check_out_reminder', 'open_shift_alert'),
         allowNull: false,
         validate: {
             notNull: { msg: messages.error.notification.fields_empty.type },
