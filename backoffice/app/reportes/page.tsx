@@ -4,6 +4,7 @@ import { Sidebar } from '@/components/Sidebar';
 import { Ic } from '@/components/icons';
 import { Avatar, initials } from '@/components/ui';
 import { secondsToHHMM } from '@/lib/format';
+import { computeMetrics, minToHHMM } from '@/lib/metrics';
 import { BASE_PATH } from '@/lib/config';
 import type { Shift } from '@/lib/types';
 
@@ -13,18 +14,8 @@ export default async function ReportesPage() {
     if (!getToken()) redirect('/login');
     const res = await apiGetJson<{ data: Shift[] }>('/shifts/admin');
     const shifts = res?.data || [];
-
-    const byEmp = new Map<number, { name: string; count: number; seconds: number; open: number }>();
-    for (const s of shifts) {
-        const name = s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : `#${s.employee_id}`;
-        const cur = byEmp.get(s.employee_id) || { name, count: 0, seconds: 0, open: 0 };
-        cur.count++;
-        cur.seconds += s.worked_seconds || 0;
-        if (s.status === 'open') cur.open++;
-        byEmp.set(s.employee_id, cur);
-    }
-    const rows = [...byEmp.values()].sort((a, b) => b.seconds - a.seconds);
-    const totalSeconds = rows.reduce((a, r) => a + r.seconds, 0);
+    const m = computeMetrics(shifts);
+    const maxDaily = Math.max(1, ...m.daily.map((d) => d.seconds));
 
     return (
         <div className="admin">
@@ -33,7 +24,7 @@ export default async function ReportesPage() {
                 <div style={{ padding: '20px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div>
                         <h1 style={{ margin: 0, fontSize: 23, fontWeight: 700, letterSpacing: '-0.02em' }}>Reportes</h1>
-                        <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--ink-3)' }}>Horas trabajadas por persona · hora oficial del servidor</p>
+                        <p style={{ margin: '4px 0 0', fontSize: 13.5, color: 'var(--ink-3)' }}>Métricas de horarios de trabajo · hora oficial (Argentina, UTC−3)</p>
                     </div>
                     <div style={{ display: 'flex', gap: 9 }}>
                         <a className="seg" href={`${BASE_PATH}/api/export?format=csv`}>{Ic.doc({ size: 16 })}CSV</a>
@@ -42,34 +33,66 @@ export default async function ReportesPage() {
                     </div>
                 </div>
 
-                <div style={{ padding: '18px 28px', display: 'flex', gap: 14, flexWrap: 'wrap' }}>
-                    <Stat label="Total horas del equipo" value={secondsToHHMM(totalSeconds)} />
-                    <Stat label="Empleados con fichadas" value={String(rows.length)} />
-                    <Stat label="Jornadas registradas" value={String(shifts.length)} />
+                {/* Métricas generales */}
+                <div style={{ padding: '18px 28px 4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
+                    <Stat label="Total horas del equipo" value={secondsToHHMM(m.totalSeconds)} />
+                    <Stat label="Horas hoy" value={secondsToHHMM(m.secondsToday)} />
+                    <Stat label="Horas últimos 7 días" value={secondsToHHMM(m.secondsWeek)} />
+                    <Stat label="Promedio por jornada" value={secondsToHHMM(m.avgShiftSeconds)} />
+                    <Stat label="Entrada promedio" value={minToHHMM(m.avgCheckinMin)} />
+                    <Stat label="Salida promedio" value={minToHHMM(m.avgCheckoutMin)} />
+                    <Stat label="Puntualidad" value={m.punctualPct == null ? '—' : `${m.punctualPct}%`} tone={punctTone(m.punctualPct)} />
+                    <Stat label="Jornadas abiertas" value={String(m.openCount)} tone={m.openCount ? 'warn' : undefined} />
                 </div>
 
-                <div style={{ padding: '0 28px 24px' }}>
+                {/* Gráfico: horas por día (últimos 14 días) */}
+                <div style={{ padding: '14px 28px' }}>
+                    <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: '16px 20px 12px', boxShadow: 'var(--shadow-1)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Horas trabajadas por día · últimos 14 días</div>
+                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 132 }}>
+                            {m.daily.map((d) => {
+                                const hPct = Math.round((d.seconds / maxDaily) * 100);
+                                return (
+                                    <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
+                                        <div style={{ fontSize: 9.5, color: 'var(--ink-3)', height: 12 }}>{d.seconds ? secondsToHHMM(d.seconds) : ''}</div>
+                                        <div title={`${d.label}: ${secondsToHHMM(d.seconds)}`}
+                                            style={{ width: '100%', height: `${Math.max(hPct, d.seconds ? 4 : 0)}%`, minHeight: d.seconds ? 4 : 0, background: 'var(--accent)', borderRadius: '5px 5px 2px 2px', transition: 'height .2s' }} />
+                                        <div style={{ fontSize: 9.5, color: 'var(--ink-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{d.label}</div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+
+                {/* Métricas por persona */}
+                <div style={{ padding: '4px 28px 24px' }}>
                     <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-1)' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                            <thead><tr>
-                                {['Empleado', 'Jornadas', 'Horas trabajadas', 'Abiertas'].map((h, i) => (
-                                    <th key={i} className="th" style={{ paddingTop: 14, textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
-                                ))}
-                            </tr></thead>
-                            <tbody>
-                                {rows.length === 0 && (
-                                    <tr><td className="td" colSpan={4} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>Sin datos: todavía no hay fichadas.</td></tr>
-                                )}
-                                {rows.map((r, i) => (
-                                    <tr key={i} className="row">
-                                        <td className="td"><div style={{ display: 'flex', alignItems: 'center', gap: 9, fontWeight: 600 }}><Avatar ini={initials(r.name)} size={28} />{r.name}</div></td>
-                                        <td className="td tnum" style={{ textAlign: 'right' }}>{r.count}</td>
-                                        <td className="td tnum" style={{ textAlign: 'right', fontWeight: 700 }}>{secondsToHHMM(r.seconds)}</td>
-                                        <td className="td tnum" style={{ textAlign: 'right', color: r.open ? 'var(--warn)' : 'var(--ink-3)' }}>{r.open || '—'}</td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
+                        <div style={{ overflowX: 'auto' }}>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 720 }}>
+                                <thead><tr>
+                                    {['Empleado', 'Jornadas', 'Horas', 'Prom./jornada', 'Entrada prom.', 'Puntualidad', 'Abiertas'].map((h, i) => (
+                                        <th key={i} className="th" style={{ paddingTop: 14, textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
+                                    ))}
+                                </tr></thead>
+                                <tbody>
+                                    {m.perPerson.length === 0 && (
+                                        <tr><td className="td" colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>Sin datos: todavía no hay fichadas.</td></tr>
+                                    )}
+                                    {m.perPerson.map((r) => (
+                                        <tr key={r.id} className="row">
+                                            <td className="td"><div style={{ display: 'flex', alignItems: 'center', gap: 9, fontWeight: 600 }}><Avatar ini={initials(r.name)} size={28} />{r.name}</div></td>
+                                            <td className="td tnum" style={{ textAlign: 'right' }}>{r.count}</td>
+                                            <td className="td tnum" style={{ textAlign: 'right', fontWeight: 700 }}>{secondsToHHMM(r.seconds)}</td>
+                                            <td className="td tnum" style={{ textAlign: 'right', color: 'var(--ink-2)' }}>{secondsToHHMM(r.avgSeconds)}</td>
+                                            <td className="td tnum" style={{ textAlign: 'right', color: 'var(--ink-2)' }}>{minToHHMM(r.avgCheckinMin)}</td>
+                                            <td className="td tnum" style={{ textAlign: 'right', color: punctColor(r.punctualPct) }}>{r.punctualPct == null ? '—' : `${r.punctualPct}%`}</td>
+                                            <td className="td tnum" style={{ textAlign: 'right', color: r.open ? 'var(--warn)' : 'var(--ink-3)' }}>{r.open || '—'}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </main>
@@ -77,11 +100,21 @@ export default async function ReportesPage() {
     );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function punctTone(pct: number | null): 'ok' | 'warn' | undefined {
+    if (pct == null) return undefined;
+    return pct >= 80 ? 'ok' : 'warn';
+}
+function punctColor(pct: number | null): string {
+    if (pct == null) return 'var(--ink-3)';
+    return pct >= 80 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
+}
+
+function Stat({ label, value, tone }: { label: string; value: string; tone?: 'ok' | 'warn' }) {
+    const color = tone === 'ok' ? 'var(--ok)' : tone === 'warn' ? 'var(--warn)' : undefined;
     return (
-        <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 14, padding: '14px 18px', minWidth: 180, boxShadow: 'var(--shadow-1)' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>{label}</div>
-            <div className="tnum" style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4 }}>{value}</div>
+        <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 14, padding: '14px 18px', boxShadow: 'var(--shadow-1)' }}>
+            <div style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: 'var(--ink-3)' }}>{label}</div>
+            <div className="tnum" style={{ fontSize: 26, fontWeight: 700, letterSpacing: '-0.02em', marginTop: 4, color }}>{value}</div>
         </div>
     );
 }
