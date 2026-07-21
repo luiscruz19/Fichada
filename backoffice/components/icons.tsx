@@ -38,4 +38,7 @@ export const Ic = {
     chart: (p: P = {}) => <Icon {...p}><path d="M4 4v16h16" /><path d="M8 14v3M12 9v8M16 12v5" /></Icon>,
     arrowLeft: (p: P = {}) => <Icon {...p}><path d="M19 12H6M11 6l-5 6 5 6" /></Icon>,
     key: (p: P = {}) => <Icon {...p}><circle cx="8" cy="15" r="4" /><path d="M10.85 12.15 20 3M18 5l2 2M15 8l2 2" /></Icon>,
+    eye: (p: P = {}) => <Icon {...p}><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7-10-7-10-7Z" /><circle cx="12" cy="12" r="3" /></Icon>,
+    eyeOff: (p: P = {}) => <Icon {...p}><path d="M3 3l18 18" /><path d="M10.6 10.6a3 3 0 0 0 4.2 4.2" /><path d="M9.4 5.2A9.5 9.5 0 0 1 12 5c6 0 10 7 10 7a15.8 15.8 0 0 1-3 3.6M6.2 6.7A15.8 15.8 0 0 0 2 12s4 7 10 7a9.4 9.4 0 0 0 3-.5" /></Icon>,
+    fire: (p: P = {}) => <Icon {...p}><path d="M12 3s5 4 5 9a5 5 0 0 1-10 0c0-1.5.6-2.6 1.2-3.4C8.9 10.5 9 12 10 12c0-2.5 2-4 2-9Z" /></Icon>,
 };

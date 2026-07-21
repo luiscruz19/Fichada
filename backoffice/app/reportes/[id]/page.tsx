@@ -3,10 +3,12 @@ import Link from 'next/link';
 import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { Ic } from '@/components/icons';
-import { Avatar, initials, ChipTone } from '@/components/ui';
+import { Avatar, initials } from '@/components/ui';
 import { MapaClient, type MapPoint } from '@/components/MapaClient';
 import { DateRangePicker } from '@/components/DateRangePicker';
-import { secondsToHHMM, fmtTime, fmtDateShort } from '@/lib/format';
+import { BarChart } from '@/components/BarChart';
+import { EmpleadoShifts } from '@/components/EmpleadoShifts';
+import { secondsToHHMM } from '@/lib/format';
 import { computeMetrics, minToHHMM, TZ } from '@/lib/metrics';
 import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
 import type { Shift, Employee } from '@/lib/types';
@@ -17,12 +19,12 @@ function fmtAR(iso: string): string {
     return new Intl.DateTimeFormat('es-AR', { timeZone: TZ, day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false }).format(new Date(iso));
 }
 
-export default async function ReporteEmpleadoPage({ params, searchParams }: { params: { id: string }; searchParams: { from?: string; to?: string } }) {
+export default async function ReporteEmpleadoPage({ params, searchParams }: { params: { id: string }; searchParams: { from?: string; to?: string; preset?: string } }) {
     if (!getToken()) redirect('/login');
     const id = Number(params.id);
     if (!Number.isFinite(id)) notFound();
 
-    const range = resolveRange(searchParams);
+    const range = resolveRange(searchParams, 'month');
     const apiQ = rangeToApiQuery(range.fromKey, range.toKey, { employee_id: String(id) });
     const [shiftsRes, empRes] = await Promise.all([
         apiGetJson<{ data: Shift[] }>(`/shifts/admin?${apiQ}`),
@@ -32,7 +34,6 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
     const emp = empRes?.data;
     const name = emp ? `${emp.first_name} ${emp.last_name}` : (shifts[0]?.employee ? `${shifts[0].employee!.first_name} ${shifts[0].employee!.last_name}` : `Empleado #${id}`);
     const m = computeMetrics(shifts, range);
-    const maxDaily = Math.max(1, ...m.daily.map((d) => d.seconds));
 
     const backHref = (() => {
         const p = new URLSearchParams();
@@ -63,35 +64,24 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
                             <p style={{ margin: '2px 0 0', fontSize: 13, color: 'var(--ink-3)' }}>{emp?.email || ''}{emp?.expected_check_in ? ` · entrada esperada ${emp.expected_check_in.slice(0, 5)}` : ''} · <strong style={{ color: 'var(--ink-2)' }}>{range.label}</strong></p>
                         </div>
                     </div>
-                    <div style={{ marginTop: 14 }}><DateRangePicker /></div>
+                    <div style={{ marginTop: 14 }}><DateRangePicker defaultPreset="month" /></div>
                 </div>
 
                 <div style={{ padding: '18px 28px 4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(170px, 1fr))', gap: 14 }}>
-                    <Stat label="Total horas" value={secondsToHHMM(m.totalSeconds)} />
+                    <Stat label="Horas del período" value={secondsToHHMM(m.totalSeconds)} />
                     <Stat label="Jornadas" value={String(m.shiftsCount)} />
-                    <Stat label="Horas hoy" value={secondsToHHMM(m.secondsToday)} />
-                    <Stat label="Últimos 7 días" value={secondsToHHMM(m.secondsWeek)} />
                     <Stat label="Prom. por jornada" value={secondsToHHMM(m.avgShiftSeconds)} />
                     <Stat label="Entrada promedio" value={minToHHMM(m.avgCheckinMin)} />
                     <Stat label="Salida promedio" value={minToHHMM(m.avgCheckoutMin)} />
                     <Stat label="Puntualidad" value={m.punctualPct == null ? '—' : `${m.punctualPct}%`} />
+                    <Stat label="Jornadas abiertas" value={String(m.openCount)} />
                 </div>
 
                 {/* Gráfico horas/día */}
                 <div style={{ padding: '14px 28px' }}>
-                    <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: '16px 20px 12px', boxShadow: 'var(--shadow-1)' }}>
-                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 14 }}>Horas por día · últimos 14 días</div>
-                        <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: 120 }}>
-                            {m.daily.map((d) => {
-                                const hPct = Math.round((d.seconds / maxDaily) * 100);
-                                return (
-                                    <div key={d.key} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, minWidth: 0 }}>
-                                        <div title={`${d.label}: ${secondsToHHMM(d.seconds)}`} style={{ width: '100%', height: `${Math.max(hPct, d.seconds ? 4 : 0)}%`, minHeight: d.seconds ? 4 : 0, background: 'var(--accent)', borderRadius: '5px 5px 2px 2px' }} />
-                                        <div style={{ fontSize: 9.5, color: 'var(--ink-3)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', width: '100%', textAlign: 'center' }}>{d.label}</div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                    <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: '16px 20px 14px', boxShadow: 'var(--shadow-1)' }}>
+                        <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Horas por día</div>
+                        <BarChart data={m.daily} />
                     </div>
                 </div>
 
@@ -101,46 +91,10 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
                     <div style={{ height: 380 }}><MapaClient points={points} /></div>
                 </div>
 
-                {/* Sus jornadas */}
+                {/* Sus jornadas (clic para ver el detalle con mapa) */}
                 <div style={{ padding: '14px 28px 24px' }}>
-                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 10 }}>Jornadas</div>
-                    <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-1)' }}>
-                        <div style={{ overflowX: 'auto' }}>
-                            <table style={{ width: '100%', borderCollapse: 'collapse', minWidth: 620 }}>
-                                <thead><tr>
-                                    {['Fecha', 'Entrada', 'Salida', 'Pausas', 'Total', 'Estado', 'Ubicación'].map((h, i) => (
-                                        <th key={i} className="th" style={{ paddingTop: 14, textAlign: i === 0 ? 'left' : 'right' }}>{h}</th>
-                                    ))}
-                                </tr></thead>
-                                <tbody>
-                                    {shifts.length === 0 && (
-                                        <tr><td className="td" colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>Este empleado todavía no tiene fichadas.</td></tr>
-                                    )}
-                                    {shifts.map((s) => {
-                                        const pausas = (s.breaks || []).reduce((a, b) => a + (b.duration_seconds || 0), 0);
-                                        const hasIn = s.check_in_lat != null && s.check_in_lng != null;
-                                        const hasOut = s.check_out_lat != null && s.check_out_lng != null;
-                                        return (
-                                            <tr key={s.id} className="row">
-                                                <td className="td" style={{ color: 'var(--ink-2)' }}>{fmtDateShort(s.check_in)}</td>
-                                                <td className="td tnum" style={{ textAlign: 'right', fontWeight: 600 }}>{fmtTime(s.check_in) || '—'}</td>
-                                                <td className="td tnum" style={{ textAlign: 'right', fontWeight: 600, color: s.check_out ? 'var(--ink)' : 'var(--warn)' }}>{fmtTime(s.check_out) || '—'}</td>
-                                                <td className="td tnum" style={{ textAlign: 'right', color: 'var(--ink-2)' }}>{pausas ? secondsToHHMM(pausas) : '—'}</td>
-                                                <td className="td tnum" style={{ textAlign: 'right', fontWeight: 700 }}>{secondsToHHMM(s.worked_seconds)}</td>
-                                                <td className="td" style={{ textAlign: 'right' }}><ChipTone tone={s.status === 'open' ? 'warn' : 'ok'}>{s.status === 'open' ? 'Abierta' : 'Completa'}</ChipTone></td>
-                                                <td className="td" style={{ textAlign: 'right' }}>
-                                                    <span style={{ display: 'inline-flex', gap: 5, justifyContent: 'flex-end' }}>
-                                                        <span title="Entrada" style={{ color: hasIn ? '#16a34a' : 'var(--hairline-2)' }}>{Ic.pin({ size: 15 })}</span>
-                                                        <span title="Salida" style={{ color: hasOut ? '#dc2626' : 'var(--hairline-2)' }}>{Ic.pin({ size: 15 })}</span>
-                                                    </span>
-                                                </td>
-                                            </tr>
-                                        );
-                                    })}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                    <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Jornadas <span style={{ fontWeight: 500, color: 'var(--ink-3)' }}>· clic para ver el detalle en el mapa</span></div>
+                    <EmpleadoShifts shifts={shifts} name={name} />
                 </div>
             </main>
         </div>

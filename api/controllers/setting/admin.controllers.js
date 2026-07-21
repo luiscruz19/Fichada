@@ -29,6 +29,8 @@ export async function updateSettings(req, res) {
             'default_target_hours', 'default_expected_check_in', 'work_days',
             'late_tolerance_minutes', 'timezone', 'rounding_minutes',
             'location_required', 'allow_breaks', 'allow_correction_requests',
+            'reminders_enabled', 'reminder_checkin_start', 'reminder_checkin_end',
+            'reminder_checkout_start', 'reminder_checkout_end',
         ];
         const updates = {};
         for (const f of fields) {

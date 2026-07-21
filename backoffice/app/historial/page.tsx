@@ -3,15 +3,18 @@ import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { HistorialClient } from '@/components/HistorialClient';
 import { fmtTime, fmtDateShort, secondsToHHMM, initials } from '@/lib/format';
+import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
 import { BASE_PATH } from '@/lib/config';
 import type { Shift, CorrectionRequest, Row } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
-export default async function HistorialPage() {
+export default async function HistorialPage({ searchParams }: { searchParams: { from?: string; to?: string; preset?: string } }) {
     if (!getToken()) redirect('/login');
 
-    const shiftsJson = await apiGetJson<{ data: Shift[] }>('/shifts/admin');
+    const range = resolveRange(searchParams, 'month');
+    const apiQ = rangeToApiQuery(range.fromKey, range.toKey);
+    const shiftsJson = await apiGetJson<{ data: Shift[] }>(`/shifts/admin${apiQ ? `?${apiQ}` : ''}`);
     const reqJson = await apiGetJson<{ data: CorrectionRequest[] }>('/correction-requests/admin?status=pending');
 
     const shifts = shiftsJson?.data || [];
@@ -42,7 +45,7 @@ export default async function HistorialPage() {
     return (
         <div className="admin">
             <Sidebar adminName={await getAdminName()} />
-            <HistorialClient rows={rows} counts={counts} exportBase={`${BASE_PATH}/api/export`} />
+            <HistorialClient rows={rows} counts={counts} exportBase={`${BASE_PATH}/api/export`} exportQuery={apiQ} rangeLabel={range.label} />
         </div>
     );
 }

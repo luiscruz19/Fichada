@@ -27,7 +27,7 @@ export function Sidebar({ adminName = 'Administrador' }: { adminName?: string })
     return (
         <aside style={{ width: 226, background: 'var(--surface-2)', borderRight: '1px solid var(--hairline)', display: 'flex', flexDirection: 'column', padding: '18px 14px', flexShrink: 0, minHeight: '100vh' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '0 6px 18px' }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 17 }}>F</div>
+                <img src={`${BASE_PATH}/logo.svg`} width={34} height={34} alt="Fichada" style={{ borderRadius: 10, display: 'block' }} />
                 <div>
                     <div style={{ fontSize: 15.5, fontWeight: 700, letterSpacing: '-0.01em' }}>Fichada</div>
                     <div style={{ fontSize: 11, color: 'var(--ink-3)', fontWeight: 500 }}>Panel admin</div>

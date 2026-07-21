@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { BASE_PATH } from '@/lib/config';
+import { PasswordInput } from '@/components/PasswordInput';
 
 export default function LoginPage() {
     const router = useRouter();
@@ -39,7 +40,7 @@ export default function LoginPage() {
         <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 18, background: 'radial-gradient(120% 120% at 50% 0%, #2a2c30 0%, #1b1d20 100%)' }}>
             <form onSubmit={onSubmit} style={{ width: 380, background: 'var(--surface)', borderRadius: 20, padding: '32px 30px', boxShadow: 'var(--shadow-2)' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 22 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: 12, background: 'var(--accent)', color: 'var(--on-accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 20 }}>F</div>
+                    <img src={`${BASE_PATH}/logo.svg`} width={42} height={42} alt="Fichada" style={{ borderRadius: 12, display: 'block' }} />
                     <div>
                         <div style={{ fontSize: 18, fontWeight: 700, letterSpacing: '-0.01em' }}>Fichada</div>
                         <div style={{ fontSize: 12, color: 'var(--ink-3)', fontWeight: 500 }}>Panel de administración</div>
@@ -51,8 +52,7 @@ export default function LoginPage() {
                     style={inputStyle} placeholder="admin@fichada.com" />
 
                 <label className="eyebrow" style={{ marginTop: 14, display: 'block' }}>Contraseña</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                    style={inputStyle} placeholder="••••••••" />
+                <PasswordInput value={password} onChange={setPassword} placeholder="••••••••" inputStyle={inputStyle} />
 
                 {error && (
                     <div style={{ marginTop: 14, background: 'var(--danger-tint)', color: 'var(--danger)', borderRadius: 10, padding: '9px 12px', fontSize: 13, fontWeight: 600 }}>

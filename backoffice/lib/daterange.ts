@@ -71,10 +71,15 @@ export type ResolvedRange = { fromKey: string | null; toKey: string | null; labe
 
 const isKey = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
-// Lee el rango desde los searchParams del server component.
-export function resolveRange(sp: { from?: string; to?: string }): ResolvedRange {
-    const fromKey = isKey(sp.from) ? sp.from! : null;
-    const toKey = isKey(sp.to) ? sp.to! : null;
+// Lee el rango desde los searchParams del server component. Si no hay from/to ni
+// preset=all, aplica `defaultPreset` (p.ej. 'month' → arranca en "Este mes").
+export function resolveRange(sp: { from?: string; to?: string; preset?: string }, defaultPreset: PresetKey = 'all'): ResolvedRange {
+    let fromKey = isKey(sp.from) ? sp.from! : null;
+    let toKey = isKey(sp.to) ? sp.to! : null;
+    if (!fromKey && !toKey) {
+        if (sp.preset === 'all') { fromKey = null; toKey = null; }
+        else { const r = presetRange(defaultPreset); fromKey = r.fromKey; toKey = r.toKey; }
+    }
     let label = 'Todo el historial';
     if (fromKey && toKey) label = fromKey === toKey ? fmtKeyLong(fromKey) : `${fmtKeyShort(fromKey)} – ${fmtKeyLong(toKey)}`;
     else if (fromKey) label = `desde ${fmtKeyLong(fromKey)}`;
