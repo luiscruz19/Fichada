@@ -48,19 +48,35 @@ cd /opt/repository/fichada
 ### Cómo elige el backend (`app/eas.json`)
 - **`preview-test`** → `https://fichada.sda.ovh/api` → APK contra el server (anda en cualquier red). Para demos.
 - **`preview-local`** → `http://192.168.100.8:4000` → backend local (mismo WiFi + `make up`; el api se expone en `:4000`).
-- **`production`** → AAB (`https://fichada.sda.ovh/api`) para Play Store.
+- **`production`** → APK de distribución interna (`https://fichada.sda.ovh/api`), con `autoIncrement` del versionCode.
 
-El código (`app/src/api.js`) lee `process.env.EXPO_PUBLIC_API_URL` con **precedencia**; si no está, cae al gateway local de Traefik (Host header).
+El código (`app/src/api.js`) lee `process.env.EXPO_PUBLIC_API_URL` con **precedencia**. Si no está: en desarrollo cae al gateway local de Traefik (Host header) y en la app instalada al dominio real, para que un update publicado sin la variable no deje a nadie sin backend.
 
-### Pasos
+### Pasos (APK nuevo)
 ```bash
 cd app
 npx eas-cli login            # cuenta Expo (owner: luiscruzz.salta)
-npx eas-cli init             # crea el proyecto en expo.dev y escribe extra.eas.projectId en app.json
-# EAS requiere git: en la raíz del repo → git add -A && git commit
-npx eas-cli build -p android --profile preview-test     # APK contra el server → link/QR
-# Play Store: --profile production (AAB) + npx eas-cli submit
+npm run build:test           # APK contra el server → link/QR
+npm run build:prod           # APK de producción
 ```
+
+### Actualizar la app sin reinstalar (OTA)
+
+Si el cambio es **solo JavaScript** (pantallas, textos, lógica), no hace falta un APK nuevo:
+
+```bash
+cd app
+npm run update:test -- "qué cambió"   # canal preview-test
+npm run update:prod -- "qué cambió"   # canal production
+```
+
+El teléfono la toma **al volver a primer plano**, o a mano desde el avatar → **Buscar actualización**
+(ahí también se ve qué versión está corriendo). Con una **jornada abierta** no reinicia solo: descarga
+la versión y la aplica en el próximo arranque, para no cortarle la pantalla a quien está por fichar.
+
+**Sí hace falta APK nuevo** cuando cambia código nativo: dependencias con parte nativa, permisos, o el
+`version` de `app.json` — ese string **es** el `runtimeVersion` (`policy: appVersion`), así que tocarlo
+corta las actualizaciones de todos los APK ya instalados hasta que reinstalen.
 
 ---
 
@@ -68,7 +84,7 @@ npx eas-cli build -p android --profile preview-test     # APK contra el server �
 
 | | Backend | App |
 |---|---|---|
-| Se entrega | 4 imágenes Docker en GHCR | APK/AAB |
+| Se entrega | 4 imágenes Docker en GHCR | APK (o update OTA) |
 | Corre en | Server `/opt/test/fichada` (Traefik + infra compartida) | El celular |
-| Se publica con | `./deploy.sh test` | `eas build` (nube) → link/QR |
+| Se publica con | `./deploy.sh test` | `npm run build:*` (APK) · `npm run update:*` (OTA, sin reinstalar) |
 | URL | api `fichada.sda.ovh/api` · panel `fichada.sda.ovh/backoffice` | consume el api |
