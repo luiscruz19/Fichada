@@ -7,8 +7,13 @@ import { getItem, setItem, deleteItem } from './storage';
 const PUBLIC_API = process.env.EXPO_PUBLIC_API_URL;
 const LOCAL_GATEWAY = 'http://10.0.2.2';
 const LOCAL_API_HOST = 'fichada-api.localhost';
-const USE_LOCAL = !PUBLIC_API;
-const BASE = (PUBLIC_API || LOCAL_GATEWAY).replace(/\/$/, '');
+// Guardarraíl: si la variable no llegó (p.ej. un `eas update` publicado sin ella), en la app
+// instalada NO se puede caer al gateway local — dejaría a todos sin backend. Ahí manda el
+// dominio real; el fallback local queda solo para desarrollo.
+const PROD_API = 'https://fichada.sda.ovh/api';
+const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
+const USE_LOCAL = !PUBLIC_API && IS_DEV;
+const BASE = (PUBLIC_API || (IS_DEV ? LOCAL_GATEWAY : PROD_API)).replace(/\/$/, '');
 
 function baseHeaders(extra = {}) {
     const h = { 'Content-Type': 'application/json', ...extra };
@@ -29,6 +34,30 @@ export async function setToken(t) {
 export async function clearToken() {
     token = null;
     await deleteItem('fichada_token');
+}
+
+// El JWT del backend trae `exp` en segundos. Decodificamos el payload a mano: en Hermes
+// `atob` no está garantizado y no vale traerse una dependencia por diez líneas.
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+function b64urlDecode(s) {
+    let bits = 0, val = 0, out = '';
+    for (const ch of s.replace(/-/g, '+').replace(/_/g, '/')) {
+        const i = B64.indexOf(ch);
+        if (i < 0) continue; // padding y basura
+        val = (val << 6) | i; bits += 6;
+        if (bits >= 8) { bits -= 8; out += String.fromCharCode((val >> bits) & 0xff); }
+    }
+    return out;
+}
+
+// ¿La sesión guardada ya venció? 30s de margen por desfasaje de reloj del teléfono.
+// Si el token es ilegible o no trae `exp`, devolvemos false y que decida el backend (401).
+export function tokenVencido(tk) {
+    try {
+        const p = JSON.parse(b64urlDecode(String(tk).split('.')[1] || ''));
+        if (!p || !p.exp) return false;
+        return p.exp * 1000 <= Date.now() + 30000;
+    } catch { return false; }
 }
 
 async function req(path, opts = {}) {

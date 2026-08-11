@@ -29,10 +29,7 @@
         "ACCESS_COARSE_LOCATION",
         "USE_BIOMETRIC",
         "USE_FINGERPRINT"
-      ],
-      "runtimeVersion": {
-        "policy": "appVersion"
-      }
+      ]
     },
     "ios": {
       "supportsTablet": false,
@@ -65,6 +62,9 @@
       "eas": {
         "projectId": "e1673573-e2e0-4a52-bc2f-804e92bab0f0"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
     },
     "updates": {
       "url": "https://u.expo.dev/e1673573-e2e0-4a52-bc2f-804e92bab0f0"
