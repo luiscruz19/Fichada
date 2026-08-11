@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, ScrollView, ActivityIndicator, Modal, TextInput } from 'react-native';
+import { View, Text, Pressable, ScrollView, ActivityIndicator, Modal, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ArrowLeft, CheckCircle2, AlertCircle, Pencil } from 'lucide-react-native';
 import { C, R, shadow1 } from '../theme';
 import { Chip } from '../components';
-import { fmtTimeFromISO, fmtDur, fmtDateLong, cap } from '../helpers';
+import SelectorHora from '../components/TimePicker';
+import { fmtTimeFromISO, fmtDur, fmtDateLong, cap, partesAr, isoDesdeMinutosAr } from '../helpers';
 import { getHistory, createCorrectionRequest } from '../api';
 
 function dayLabel(iso, lang) {
@@ -81,23 +83,39 @@ function Stat({ label, value, accent }) {
     );
 }
 
+// Horas sugeridas de salida: las típicas de cierre de jornada, para resolverlo de un toque.
+const SUGERIDOS = [13 * 60, 17 * 60, 18 * 60, 19 * 60, 20 * 60];
+
 function CorrectionModal({ t, shift, onClose, onSent }) {
+    const insets = useSafeAreaInsets();
     const [reason, setReason] = useState('');
-    const [hhmm, setHhmm] = useState('');
+    const [minutos, setMinutos] = useState(18 * 60);
+    const [diaSiguiente, setDiaSiguiente] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
 
+    // Arranca en una hora razonable para ESTA jornada y limpia el estado al cambiar de
+    // jornada: antes el modal se montaba una vez y arrastraba lo tipeado de la anterior.
+    useEffect(() => {
+        if (!shift) return;
+        const entrada = partesAr(shift.check_in).min;
+        // Propuesta: 8h después de la entrada, redondeado a 15 min y acotado al día.
+        const propuesta = Math.min(23 * 60 + 45, Math.round((entrada + 8 * 60) / 15) * 15);
+        setMinutos(propuesta % 1440);
+        setDiaSiguiente(false);
+        setReason('');
+        setError(null);
+    }, [shift?.id]);
+
     async function send() {
-        if (!reason.trim()) { setError('Escribí el motivo'); return; }
-        const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
-        if (!m) { setError('Indicá la hora de salida correcta (HH:MM)'); return; }
+        if (!shift) return;
         setBusy(true); setError(null);
-        const d = new Date(shift.check_in);
-        d.setHours(Number(m[1]), Number(m[2]), 0, 0);
-        const payload = { type: 'edit', shift_id: shift.id, reason, requested_check_out: d.toISOString() };
+        const iso = isoDesdeMinutosAr(shift.check_in, minutos, diaSiguiente);
+        // El motivo es opcional: si no escribió nada, no mandamos la clave.
+        const payload = { type: 'edit', shift_id: shift.id, requested_check_out: iso };
+        if (reason.trim()) payload.reason = reason.trim();
         try {
             await createCorrectionRequest(payload);
-            setReason(''); setHhmm('');
             onSent();
         } catch (e) {
             setError(e.message || 'No se pudo enviar');
@@ -106,29 +124,49 @@ function CorrectionModal({ t, shift, onClose, onSent }) {
         }
     }
 
+    const entradaTxt = shift ? fmtTimeFromISO(shift.check_in) : '';
+
     return (
         <Modal visible={!!shift} transparent animationType="slide" onRequestClose={onClose}>
-            <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(24,27,30,0.34)', justifyContent: 'flex-end' }}>
-                <Pressable onPress={(e) => e.stopPropagation?.()} style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 22, paddingBottom: 30 }}>
-                    <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.hairline2, alignSelf: 'center', marginBottom: 14 }} />
-                    <Text style={{ fontSize: 18, fontWeight: '700', color: C.ink, marginBottom: 4 }}>{t('pedirCorreccion')}</Text>
-                    <Text style={{ fontSize: 13.5, color: C.ink3, marginBottom: 16 }}>El administrador revisa y aprueba el cambio.</Text>
+            {/* En iOS hay que descontar el teclado a mano; en Android el Dialog del Modal ya
+                hace resize por su cuenta y sumarle padding lo descontaría dos veces. */}
+            <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
+                <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(24,27,30,0.34)', justifyContent: 'flex-end' }}>
+                    {/* maxHeight + scroll: sin esto el contenido se desborda con el teclado
+                        abierto y el botón de enviar queda fuera de la pantalla. */}
+                    <Pressable onPress={(e) => e.stopPropagation?.()}
+                        style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, maxHeight: '92%' }}>
+                        <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.hairline2, alignSelf: 'center', marginBottom: 12 }} />
+                        <ScrollView
+                            keyboardShouldPersistTaps="handled"
+                            contentContainerStyle={{ paddingHorizontal: 22, paddingBottom: Math.max(28, insets.bottom + 12) }}
+                        >
+                            <Text style={{ fontSize: 18, fontWeight: '700', color: C.ink, marginBottom: 4 }}>{t('pedirCorreccion')}</Text>
+                            <Text style={{ fontSize: 13.5, color: C.ink3, marginBottom: 16 }}>
+                                {entradaTxt ? `Entrada ${entradaTxt}. ` : ''}Elegí la hora de salida correcta. El administrador la revisa y la aprueba.
+                            </Text>
 
-                    <Text style={{ fontSize: 12, color: C.ink3, fontWeight: '600', marginBottom: 6 }}>Hora de salida correcta (HH:MM, opcional)</Text>
-                    <TextInput value={hhmm} onChangeText={setHhmm} placeholder="18:00" placeholderTextColor={C.ink3} keyboardType="numbers-and-punctuation"
-                        style={{ height: 48, borderRadius: R.md, borderWidth: 1.5, borderColor: C.hairline2, paddingHorizontal: 12, fontSize: 16, color: C.ink, marginBottom: 14 }} />
+                            <SelectorHora
+                                minutos={minutos}
+                                onChange={setMinutos}
+                                sugeridos={SUGERIDOS}
+                                diaSiguiente={diaSiguiente}
+                                onDiaSiguiente={setDiaSiguiente}
+                            />
 
-                    <Text style={{ fontSize: 12, color: C.ink3, fontWeight: '600', marginBottom: 6 }}>Motivo</Text>
-                    <TextInput value={reason} onChangeText={setReason} placeholder="Me olvidé de fichar la salida…" placeholderTextColor={C.ink3} multiline
-                        style={{ minHeight: 70, borderRadius: R.md, borderWidth: 1.5, borderColor: C.hairline2, padding: 12, fontSize: 15, color: C.ink, textAlignVertical: 'top' }} />
+                            <Text style={{ fontSize: 12, color: C.ink3, fontWeight: '600', marginTop: 20, marginBottom: 6 }}>Motivo (opcional)</Text>
+                            <TextInput value={reason} onChangeText={setReason} placeholder="Me olvidé de fichar la salida…" placeholderTextColor={C.ink3} multiline
+                                style={{ minHeight: 70, borderRadius: R.md, borderWidth: 1.5, borderColor: C.hairline2, padding: 12, fontSize: 15, color: C.ink, textAlignVertical: 'top' }} />
 
-                    {error ? <Text style={{ color: C.danger, fontSize: 13, fontWeight: '600', marginTop: 10 }}>{error}</Text> : null}
+                            {error ? <Text style={{ color: C.danger, fontSize: 13, fontWeight: '600', marginTop: 10 }}>{error}</Text> : null}
 
-                    <Pressable onPress={send} disabled={busy} style={{ height: 52, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginTop: 18, opacity: busy ? 0.7 : 1 }}>
-                        <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>{busy ? 'Enviando…' : 'Enviar solicitud'}</Text>
+                            <Pressable onPress={send} disabled={busy} style={{ height: 52, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginTop: 18, opacity: busy ? 0.7 : 1 }}>
+                                <Text style={{ color: C.onAccent, fontSize: 16, fontWeight: '700' }}>{busy ? 'Enviando…' : 'Enviar solicitud'}</Text>
+                            </Pressable>
+                        </ScrollView>
                     </Pressable>
                 </Pressable>
-            </Pressable>
+            </KeyboardAvoidingView>
         </Modal>
     );
 }

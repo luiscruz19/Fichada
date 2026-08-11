@@ -49,7 +49,7 @@ const messages = {
         correction_request: {
             fields_empty: {
                 employee_id: 'El empleado no puede estar vacío',
-                reason: 'El motivo no puede estar vacío',
+                reason: 'El motivo no puede superar los 500 caracteres',
                 type: 'El tipo no puede estar vacío',
                 status: 'El estado no puede estar vacío',
             }

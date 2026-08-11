@@ -46,7 +46,12 @@ export async function approveRequest(req, res) {
         }
 
         // Aplica el cambio a la jornada y deja la auditoría, en la misma transacción.
-        await applyCorrection(request, req.employee?.id ?? null, transaction);
+        // El admin puede aprobar con una hora distinta a la pedida (la que ve en el drawer).
+        const ajustes = {
+            check_in: req.body?.requested_check_in ?? null,
+            check_out: req.body?.requested_check_out ?? null,
+        };
+        await applyCorrection(request, req.employee?.id ?? null, transaction, ajustes);
 
         await request.update({
             status: 'approved',

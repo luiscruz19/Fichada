@@ -79,7 +79,7 @@ export type CorrectionRequest = {
     type: 'edit' | 'add';
     requested_check_in: string | null;
     requested_check_out: string | null;
-    reason: string;
+    reason: string | null;
     status: 'pending' | 'approved' | 'rejected';
     employee?: Employee;
 };
