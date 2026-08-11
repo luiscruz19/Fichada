@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, ActivityIndicator, Alert, StatusBar } from 'react-native';
+import { View, Text, ActivityIndicator, Alert, StatusBar, AppState } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { getItem, setItem, IS_WEB } from './src/storage';
 import * as Location from 'expo-location';
@@ -9,8 +9,9 @@ import Constants from 'expo-constants';
 import { C } from './src/theme';
 import { makeT } from './src/i18n';
 import { fmtTime } from './src/helpers';
-import { loadToken, clearToken, login, hasPin, loginPin, setPinRemote, getProfile, getStatus, clockIn, clockOut, startBreak, endBreak, listNotifications, markNotificationRead } from './src/api';
+import { loadToken, clearToken, tokenVencido, login, hasPin, loginPin, setPinRemote, getProfile, getStatus, clockIn, clockOut, startBreak, endBreak, listNotifications, markNotificationRead } from './src/api';
 import { syncDevice } from './src/device';
+import { buscarActualizacion, versionDetalle } from './src/updates';
 import ClockScreen from './src/screens/ClockScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import BlockedShiftScreen from './src/screens/BlockedShiftScreen';
@@ -31,6 +32,16 @@ if (!IS_EXPO_GO) {
 const PIN_KEY = 'fichada_pin';
 const EMAIL_KEY = 'fichada_email';
 const LANG = 'es';
+
+// Pantalla de espera mientras se verifica la sesión. Comparte el fondo con el splash
+// (#fafaf9 en app.json), así el relevo splash → loader no se ve como un salto.
+function Loader() {
+    return (
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
+            <ActivityIndicator color={C.accent} />
+        </View>
+    );
+}
 
 // ---- live clock ----
 function useNow(ms = 1000) {
@@ -123,12 +134,36 @@ export default function App() {
         }
     }, []);
 
-    // boot: si hay sesión guardada entra directo; si no, va al ingreso recordando el email.
+    // boot: que HAYA un token guardado no quiere decir que sirva (la sesión dura 8h).
+    // Primero se descarta local por `exp` (sin red) y recién después se confirma contra el
+    // backend. Pasamos a 'active' solo con la jornada ya en mano: así la pantalla principal
+    // no aparece antes del login ni con datos que no son los del empleado.
+    const bootCargoStatus = useRef(false);
     useEffect(() => {
         (async () => {
             const tk = await loadToken();
-            if (tk) { setSession('active'); return; }
-            await goToLogin();
+            if (!tk || tokenVencido(tk)) {
+                if (tk) await clearToken();
+                await goToLogin();
+                return;
+            }
+            try {
+                const res = await getStatus();
+                const data = res?.data || {};
+                setEstado(STATUS_MAP[data.status] || 'fuera');
+                setShift(data.shift || null);
+                bootCargoStatus.current = true;
+                setSession('active');
+            } catch (e) {
+                if (e.status === 401 || e.status === 403) {
+                    await clearToken();
+                    await goToLogin();
+                    return;
+                }
+                // Sin conexión: el token todavía es válido por fecha, así que lo dejamos
+                // entrar en vez de encerrarlo en el loader. La jornada se carga al reintentar.
+                setSession('active');
+            }
         })();
     }, [goToLogin]);
 
@@ -150,7 +185,8 @@ export default function App() {
             setEstado(STATUS_MAP[data.status] || 'fuera');
             setShift(data.shift || null);
         } catch (e) {
-            if (e.status === 401) { await clearToken(); await goToLogin(); }
+            // 403 = empleado dado de baja o dispositivo revocado: también vuelve al ingreso.
+            if (e.status === 401 || e.status === 403) { await clearToken(); await goToLogin(); }
         }
     }, [goToLogin]);
 
@@ -172,8 +208,22 @@ export default function App() {
     }, []);
 
     useEffect(() => {
-        if (session === 'active') { refresh(); loadProfile(); syncDevice(); loadNotis(); }
+        if (session !== 'active') return;
+        // El boot ya trajo el estado de la jornada: no lo pedimos dos veces al arrancar.
+        if (bootCargoStatus.current) bootCargoStatus.current = false;
+        else refresh();
+        loadProfile(); syncDevice(); loadNotis();
     }, [session, refresh, loadProfile, loadNotis]);
+
+    // Al volver a la app buscamos versión nueva y, si no hay jornada abierta, la aplicamos
+    // sola. Sin esto el default nativo la deja para el arranque en frío siguiente.
+    useEffect(() => {
+        if (session !== 'active') return;
+        const sub = AppState.addEventListener('change', (s) => {
+            if (s === 'active') void buscarActualizacion({ silencioso: true, hayJornadaAbierta: estado !== 'fuera' });
+        });
+        return () => sub.remove();
+    }, [session, estado]);
 
     async function openNotis() { await loadNotis(); setNotisOpen(true); }
     async function markAllRead() {
@@ -272,6 +322,11 @@ export default function App() {
             }
             await refresh();
         } catch (e) {
+            // Si la sesión venció justo al fichar, al ingreso: un "no se pudo" lo deja
+            // probando de nuevo contra un token muerto.
+            if (e.status === 401 || e.status === 403) {
+                await clearToken(); await goToLogin(); return;
+            }
             Alert.alert(
                 e.code === 'gps' ? t('gpsTitulo') : 'No se pudo fichar',
                 e.message || t('sinConexionMsg')
@@ -281,14 +336,21 @@ export default function App() {
         }
     }
 
-    // ---- render ----
-    if (session === 'boot') {
-        return (
-            <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
-                <ActivityIndicator color={C.accent} />
-            </View>
+    // Único menú de la app: quién sos, qué versión corre y cómo traer la última sin
+    // reinstalar el APK.
+    function abrirMenu() {
+        Alert.alert(
+            t('appNombre'),
+            `${name}\n${t('dispositivoVinculado')}\n${versionDetalle()}`,
+            [
+                { text: 'Buscar actualización', onPress: () => { void buscarActualizacion({ hayJornadaAbierta: estado !== 'fuera' }); } },
+                { text: 'Cerrar', style: 'cancel' },
+            ],
         );
     }
+
+    // ---- render ----
+    if (session === 'boot') return <Loader />;
 
     // ¿Hay una jornada abierta de un día anterior? → bloquea hasta cerrarla.
     const prevDayOpen = (() => {
@@ -309,6 +371,10 @@ export default function App() {
         content = <PinScreen t={t} mode="confirm" error={authError} onComplete={(p) => onPin('confirm', p)} />;
     } else if (session === 'loginPin') {
         content = <PinScreen t={t} mode="login" email={email} error={authError} onComplete={(p) => onPin('login', p)} onBio={(canBio && !IS_WEB) ? onBio : undefined} onBack={() => { setAuthError(null); setSession('emailEntry'); }} />;
+    } else if (session !== 'active') {
+        // Cualquier estado que no sea 'active' muestra el loader. Si mañana se agrega un
+        // estado nuevo, no puede filtrarse la pantalla principal por descarte.
+        content = <Loader />;
     } else if (view === 'history') {
         content = <HistoryScreen t={t} lang={LANG} onBack={() => setView('clock')} />;
     } else if (prevDayOpen) {
@@ -337,7 +403,7 @@ export default function App() {
                 onPause={() => doAction('break_start')}
                 onClockOut={() => doAction('out')}
                 onHistory={() => setView('history')}
-                onMenu={() => Alert.alert(t('appNombre'), `${name}\n${t('dispositivoVinculado')}`)}
+                onMenu={abrirMenu}
                 onBell={openNotis}
                 notiCount={notis.filter((n) => !n.read_at).length}
             />
