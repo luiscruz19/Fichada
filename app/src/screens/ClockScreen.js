@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import {
-    Clock, ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight,
+    Clock, ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight, ChevronDown,
 } from 'lucide-react-native';
 import { C, R, shadow1, shadowPress } from '../theme';
 import { Dot, Chip, Avatar } from '../components';
@@ -22,13 +22,16 @@ function resolveAction(estado, t) {
 function Header({ t, name, onMenu, onBell, notiCount }) {
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 2 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
-                <Pressable onPress={onMenu}><Avatar name={name} size={38} /></Pressable>
+            {/* Todo el bloque abre el menú, con chevron para que se note que es tocable:
+                antes era un tap "a ciegas" sobre el avatar y no lo encontraba nadie. */}
+            <Pressable onPress={onMenu} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
+                <Avatar name={name} size={38} />
                 <View>
                     <Text style={{ fontSize: 15, fontWeight: '600', color: C.ink }}>{name.split(' ')[0]}</Text>
                     <Text style={{ fontSize: 12, color: C.ink3 }}>{name.split(' ').slice(1).join(' ')}</Text>
                 </View>
-            </View>
+                <ChevronDown size={17} color={C.ink3} strokeWidth={2} />
+            </Pressable>
             <Pressable onPress={onBell} style={{ width: 42, height: 42, borderRadius: 21, alignItems: 'center', justifyContent: 'center' }}>
                 <Bell size={22} color={C.ink2} strokeWidth={1.7} />
                 {notiCount > 0 && <View style={{ position: 'absolute', top: 7, right: 8, width: 9, height: 9, borderRadius: 5, backgroundColor: C.danger, borderWidth: 2, borderColor: C.bg }} />}
