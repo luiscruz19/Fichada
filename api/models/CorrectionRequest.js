@@ -51,11 +51,15 @@ const CorrectionRequest = sequelize.define('correction_requests', {
     },
     reason: {
         type: DataTypes.STRING(500),
-        allowNull: false,
+        // Opcional: pedir una corrección no debería frenarse por tener que redactar un
+        // motivo. El admin igual ve qué jornada y qué hora se pide, y decide con eso.
+        allowNull: true,
         validate: {
-            notNull: { msg: messages.error.correction_request.fields_empty.reason },
+            // Con allowNull:true el notNull queda muerto; el len sí sirve: hace que un
+            // texto largo salga como 400 y no como 500 desde MySQL.
+            len: { args: [0, 500], msg: messages.error.correction_request.fields_empty.reason },
         },
-        comment: 'Motivo que escribe el empleado'
+        comment: 'Motivo que escribe el empleado (opcional)'
     },
     status: {
         type: DataTypes.ENUM('pending', 'approved', 'rejected'),

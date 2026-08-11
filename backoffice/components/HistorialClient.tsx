@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ic } from './icons';
 import { ChipTone, Avatar } from './ui';
 import type { Row } from '@/lib/types';
-import { fmtTime } from '@/lib/format';
+import { fmtTime, toInputLocal, fromInputLocal } from '@/lib/format';
 import { BASE_PATH } from '@/lib/config';
 import { FichadaMap, type FichadaPoint } from './FichadaMap';
 import { DateRangePicker } from './DateRangePicker';
@@ -93,14 +93,30 @@ export function HistorialClient({ rows, counts, exportBase, exportQuery = '', ra
     );
 }
 
-function Field({ label, value, edited, locked }: { label: string; value: string; edited?: boolean; locked?: boolean }) {
+const lbl: React.CSSProperties = { fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' };
+const campo: React.CSSProperties = { width: '100%', height: 46, borderRadius: 10, padding: '0 12px', fontSize: 18, fontWeight: 600 };
+
+function CampoLectura({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <label style={{ fontSize: 11.5, fontWeight: 600, color: 'var(--ink-3)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</label>
+            <label style={lbl}>{label}</label>
             <div style={{ marginTop: 6, position: 'relative' }}>
-                <input defaultValue={value} readOnly={locked} style={{ width: '100%', height: 46, borderRadius: 10, border: edited ? '1.5px solid var(--accent)' : '1.5px solid var(--hairline-2)', background: locked ? 'var(--surface-2)' : 'var(--surface)', padding: '0 12px', fontSize: 18, fontWeight: 600, color: locked ? 'var(--ink-2)' : 'var(--ink)' }} />
-                {edited && !locked && <span style={{ position: 'absolute', right: 10, top: 14, fontSize: 11, fontWeight: 700, color: 'var(--accent)' }}>NUEVO</span>}
-                {locked && <span style={{ position: 'absolute', right: 10, top: 15, color: 'var(--ink-3)' }}>{Ic.lock({ size: 15 })}</span>}
+                <input value={value} readOnly style={{ ...campo, background: 'var(--surface-2)', border: '1.5px solid var(--hairline-2)', color: 'var(--ink-2)' }} />
+                <span style={{ position: 'absolute', right: 10, top: 15, color: 'var(--ink-3)' }}>{Ic.lock({ size: 15 })}</span>
+            </div>
+        </div>
+    );
+}
+
+// Selector real y controlado. datetime-local y no time: la salida de un turno nocturno
+// cae al día siguiente y con type="time" no habría forma de expresarlo.
+function CampoSalida({ value, onChange, edited }: { value: string; onChange: (v: string) => void; edited: boolean }) {
+    return (
+        <div>
+            <label style={lbl}>Salida</label>
+            <div style={{ marginTop: 6 }}>
+                <input type="datetime-local" value={value} onChange={(e) => onChange(e.target.value)}
+                    style={{ ...campo, border: edited ? '1.5px solid var(--accent)' : '1.5px solid var(--hairline-2)', background: 'var(--surface)', color: 'var(--ink)' }} />
             </div>
         </div>
     );
@@ -109,17 +125,30 @@ function Field({ label, value, edited, locked }: { label: string; value: string;
 function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
     const router = useRouter();
     const [busy, setBusy] = useState(false);
-    if (!row) return null;
-    const { shift, req } = row;
+    // Antes esto era un input NO controlado: lo que el admin tipeaba no lo leía nadie.
+    const [salida, setSalida] = useState('');
+    const req = row?.req ?? null;
+    const shift = row?.shift ?? null;
+
+    useEffect(() => {
+        if (!row) return;
+        setSalida(toInputLocal(req?.requested_check_out ?? shift?.check_out ?? null));
+    }, [row?.shift.id, req?.id]);
+
+    if (!row || !shift) return null;
 
     async function resolve(action: 'approve' | 'reject') {
         if (!req) return;
+        const iso = fromInputLocal(salida);
+        if (action === 'approve' && !iso) return; // sin hora válida no se aprueba
         setBusy(true);
         try {
             await fetch(`${BASE_PATH}/api/correction/${req.id}/${action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({}),
+                // El admin aprueba la hora que ve en pantalla, que puede no ser la que pidió
+                // el empleado. La solicitud original queda intacta y la diferencia se audita.
+                body: JSON.stringify(action === 'approve' ? { requested_check_out: iso } : {}),
             });
             onClose();
             router.refresh();
@@ -154,7 +183,10 @@ function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
                     {req ? (
                         <div style={{ background: 'var(--accent-tint)', border: '1px solid color-mix(in oklab, var(--accent) 30%, transparent)', borderRadius: 12, padding: '12px 14px', marginBottom: 18 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 13, fontWeight: 650, color: 'var(--accent)' }}>{Ic.bell({ size: 16 })}Solicitud del empleado</div>
-                            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>“{req.reason}”{requestedOut ? ` — pide salida ${requestedOut}.` : ''}</div>
+                            <div style={{ fontSize: 13, color: 'var(--ink-2)', marginTop: 5, lineHeight: 1.45 }}>
+                                {req.reason ? `“${req.reason}”` : <em style={{ color: 'var(--ink-3)' }}>Sin motivo</em>}
+                                {requestedOut ? ` — pide salida ${requestedOut}.` : ''}
+                            </div>
                         </div>
                     ) : (
                         <div style={{ background: 'var(--surface-2)', border: '1px solid var(--hairline)', borderRadius: 12, padding: '11px 13px', marginBottom: 18, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
@@ -164,8 +196,10 @@ function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
                     )}
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                        <Field label="Entrada" value={row.in || '—'} locked />
-                        <Field label="Salida" value={row.out || requestedOut || '—'} edited={!!req && !row.out} locked={!req} />
+                        <CampoLectura label="Entrada" value={row.in || '—'} />
+                        {req
+                            ? <CampoSalida value={salida} onChange={setSalida} edited={!row.out} />
+                            : <CampoLectura label="Salida" value={row.out || '—'} />}
                     </div>
 
                     <div style={{ marginTop: 16 }}>
