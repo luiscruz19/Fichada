@@ -11,11 +11,12 @@ import { makeT } from './src/i18n';
 import { fmtTime } from './src/helpers';
 import { loadToken, clearToken, tokenVencido, login, hasPin, loginPin, setPinRemote, getProfile, getStatus, clockIn, clockOut, startBreak, endBreak, listNotifications, markNotificationRead } from './src/api';
 import { syncDevice } from './src/device';
-import { buscarActualizacion, versionDetalle } from './src/updates';
+import { buscarActualizacion } from './src/updates';
 import ClockScreen from './src/screens/ClockScreen';
 import HistoryScreen from './src/screens/HistoryScreen';
 import BlockedShiftScreen from './src/screens/BlockedShiftScreen';
 import NotisSheet from './src/screens/NotisSheet';
+import MenuSheet from './src/screens/MenuSheet';
 import { EmailScreen, PasswordScreen, PinScreen } from './src/screens/AccessScreens';
 
 // Push: Expo Go (SDK 53+) removió las push de Android. Solo configuramos el handler
@@ -111,6 +112,7 @@ export default function App() {
     const [view, setView] = useState('clock'); // clock | history
     const [notis, setNotis] = useState([]);
     const [notisOpen, setNotisOpen] = useState(false);
+    const [menuOpen, setMenuOpen] = useState(false);
 
     // Lleva a la pantalla de ingreso "correcta": si este teléfono ya tiene una cuenta
     // con PIN, va DIRECTO a pedir el PIN (no vuelve a pedir el email). Solo muestra la
@@ -336,17 +338,13 @@ export default function App() {
         }
     }
 
-    // Único menú de la app: quién sos, qué versión corre y cómo traer la última sin
-    // reinstalar el APK.
-    function abrirMenu() {
-        Alert.alert(
-            t('appNombre'),
-            `${name}\n${t('dispositivoVinculado')}\n${versionDetalle()}`,
-            [
-                { text: 'Buscar actualización', onPress: () => { void buscarActualizacion({ hayJornadaAbierta: estado !== 'fuera' }); } },
-                { text: 'Cerrar', style: 'cancel' },
-            ],
-        );
+    // Cerrar sesión: se olvida el token pero NO el email, así el próximo ingreso
+    // es solo el PIN.
+    async function onLogout() {
+        setMenuOpen(false);
+        await clearToken();
+        setShift(null); setEstado('fuera'); setNotis([]); setView('clock');
+        await goToLogin();
     }
 
     // ---- render ----
@@ -403,7 +401,7 @@ export default function App() {
                 onPause={() => doAction('break_start')}
                 onClockOut={() => doAction('out')}
                 onHistory={() => setView('history')}
-                onMenu={abrirMenu}
+                onMenu={() => setMenuOpen(true)}
                 onBell={openNotis}
                 notiCount={notis.filter((n) => !n.read_at).length}
             />
@@ -416,6 +414,7 @@ export default function App() {
                 <StatusBar barStyle="dark-content" backgroundColor={C.bg} />
                 {content}
                 <NotisSheet t={t} visible={notisOpen} items={notis} onClose={() => setNotisOpen(false)} onRead={markAllRead} />
+                <MenuSheet t={t} visible={menuOpen} name={name} estado={estado} onClose={() => setMenuOpen(false)} onLogout={onLogout} />
             </SafeAreaView>
         </SafeAreaProvider>
     );
