@@ -1,13 +1,34 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { Delete, Fingerprint, ArrowLeft } from 'lucide-react-native';
 import { C, R, shadowPress } from '../theme';
+
+const LOGO = require('../../assets/icon-512.png');
+
+/**
+ * Envoltorio de las pantallas de acceso. Con el edge-to-edge de SDK 54 la ventana NO se
+ * achica al abrir el teclado: sin esto el teclado tapa el input y el botón de ingresar.
+ * El ScrollView permite además llegar al botón en pantallas bajas.
+ */
+function Pantalla({ children }) {
+    return (
+        <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: C.bg }}>
+            <ScrollView
+                contentContainerStyle={{ flexGrow: 1, padding: 26, justifyContent: 'center' }}
+                keyboardShouldPersistTaps="handled"
+                showsVerticalScrollIndicator={false}
+            >
+                {children}
+            </ScrollView>
+        </KeyboardAvoidingView>
+    );
+}
 
 function Brand({ subtitle }) {
     return (
         <View style={{ alignItems: 'center', marginBottom: 28 }}>
-            <View style={{ width: 56, height: 56, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                <Text style={{ color: C.onAccent, fontSize: 28, fontWeight: '700' }}>F</Text>
+            <View style={{ width: 56, height: 56, borderRadius: 16, overflow: 'hidden', marginBottom: 14 }}>
+                <Image source={LOGO} style={{ width: 56, height: 56 }} resizeMode="cover" />
             </View>
             <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink }}>Fichada</Text>
             {subtitle ? <Text style={{ fontSize: 14, color: C.ink3, marginTop: 4 }}>{subtitle}</Text> : null}
@@ -19,7 +40,7 @@ function Brand({ subtitle }) {
 export function EmailScreen({ t, onContinue, busy, error, initialEmail }) {
     const [email, setEmail] = useState(initialEmail || '');
     return (
-        <View style={{ flex: 1, padding: 26, justifyContent: 'center', backgroundColor: C.bg }}>
+        <Pantalla>
             <Brand subtitle="Registrá tu horario de trabajo" />
             <TextInput value={email} onChangeText={setEmail} placeholder="Email" autoCapitalize="none" keyboardType="email-address" autoFocus
                 placeholderTextColor={C.ink3} style={inputStyle} onSubmitEditing={() => onContinue(email)} />
@@ -28,7 +49,7 @@ export function EmailScreen({ t, onContinue, busy, error, initialEmail }) {
                 style={[{ height: 56, borderRadius: 16, backgroundColor: C.accent, alignItems: 'center', justifyContent: 'center', marginTop: 22, opacity: busy ? 0.7 : 1 }, shadowPress]}>
                 <Text style={{ color: C.onAccent, fontSize: 17, fontWeight: '700' }}>{busy ? t('cargando') : 'Continuar'}</Text>
             </Pressable>
-        </View>
+        </Pantalla>
     );
 }
 
@@ -36,7 +57,7 @@ export function EmailScreen({ t, onContinue, busy, error, initialEmail }) {
 export function PasswordScreen({ t, email, onLogin, onBack, error, busy }) {
     const [password, setPassword] = useState('');
     return (
-        <View style={{ flex: 1, padding: 26, justifyContent: 'center', backgroundColor: C.bg }}>
+        <Pantalla>
             <Brand subtitle="Primer ingreso" />
             <Text style={{ fontSize: 14, color: C.ink2, textAlign: 'center', marginBottom: 14 }}>{email}</Text>
             <TextInput value={password} onChangeText={setPassword} placeholder="Contraseña temporal" secureTextEntry autoFocus
@@ -49,7 +70,7 @@ export function PasswordScreen({ t, email, onLogin, onBack, error, busy }) {
             <Pressable onPress={onBack} style={{ marginTop: 18, alignItems: 'center' }}>
                 <Text style={{ color: C.ink3, fontSize: 14, fontWeight: '600' }}>Cambiar email</Text>
             </Pressable>
-        </View>
+        </Pantalla>
     );
 }
 
@@ -86,7 +107,7 @@ export function PinScreen({ t, mode, email, error, onComplete, onBio, onBack }) 
         }
     }
     return (
-        <View style={{ flex: 1, padding: 26, justifyContent: 'center', backgroundColor: C.bg }}>
+        <Pantalla>
             <View style={{ alignItems: 'center', marginBottom: 30 }}>
                 {mode === 'login' && email ? <Text style={{ fontSize: 14, color: C.ink3, marginBottom: 6 }}>{email}</Text> : null}
                 <Text style={{ fontSize: 22, fontWeight: '700', color: C.ink }}>{titles[mode]}</Text>
@@ -115,7 +136,7 @@ export function PinScreen({ t, mode, email, error, onComplete, onBio, onBack }) 
                     <Text style={{ color: C.ink3, fontSize: 14, fontWeight: '600' }}>Cambiar email</Text>
                 </Pressable>
             ) : null}
-        </View>
+        </Pantalla>
     );
 }
 

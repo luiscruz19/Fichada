@@ -40,3 +40,19 @@ export function secondsToHHMM(s?: number | null): string {
 export function initials(name: string): string {
     return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
+
+// Puente entre el ISO que guarda la base y el valor 'YYYY-MM-DDTHH:mm' que pide
+// <input type="datetime-local">. Argentina es UTC−3 fijo, igual que la API.
+export function toInputLocal(iso?: string | null): string {
+    if (!iso) return '';
+    const p = tzParts(iso);
+    const hh = p.hour === '24' ? '00' : p.hour;
+    return `${p.year}-${p.month}-${p.day}T${hh}:${p.minute}`;
+}
+
+export function fromInputLocal(value: string): string | null {
+    if (!value) return null;
+    // El offset explícito evita que el navegador lo interprete en SU zona.
+    const d = new Date(`${value}:00-03:00`);
+    return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}

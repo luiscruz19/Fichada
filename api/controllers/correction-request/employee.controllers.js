@@ -25,6 +25,14 @@ export async function createRequest(req, res) {
             if (requested_check_in == null && requested_check_out == null) {
                 return res.status(400).json(errorMessage({ message: 'Indicá al menos un horario a corregir.' }));
             }
+            // Una salida anterior a la entrada no da error en ningún lado: computeWorkedSeconds
+            // hace Math.max(0, …) y la jornada queda en 0 segundos, en silencio. Caso típico:
+            // turno noche (entró 22:00, salió 06:00) sin marcar que fue el día siguiente.
+            if (requested_check_out != null && new Date(requested_check_out) <= new Date(shift.check_in)) {
+                return res.status(400).json(errorMessage({
+                    message: 'La salida no puede ser anterior o igual a la entrada de esa jornada.'
+                }));
+            }
         } else if (type === 'add') {
             if (requested_check_in == null) {
                 return res.status(400).json(errorMessage({ message: 'Para dar de alta una jornada hace falta la hora de entrada.' }));
@@ -37,7 +45,9 @@ export async function createRequest(req, res) {
             type,
             requested_check_in: requested_check_in ?? null,
             requested_check_out: requested_check_out ?? null,
-            reason,
+            // Normalizamos: '', '   ' y la ausencia del campo se guardan todos como NULL,
+            // así el panel y las consultas tienen un solo caso de "sin motivo".
+            reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null,
             status: 'pending',
         });
 

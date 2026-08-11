@@ -67,10 +67,10 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
                         Si dejó la jornada abierta, se le recuerda la salida dentro de la franja de salida. Solo en días laborales.
                     </p>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, opacity: s.reminders_enabled !== false ? 1 : 0.5 }}>
-                        <Field label="Entrada · desde (hora)"><input type="number" min={0} max={23} value={s.reminder_checkin_start ?? 9} onChange={(e) => set('reminder_checkin_start', e.target.value)} style={inp} /></Field>
-                        <Field label="Entrada · hasta (hora)"><input type="number" min={0} max={24} value={s.reminder_checkin_end ?? 13} onChange={(e) => set('reminder_checkin_end', e.target.value)} style={inp} /></Field>
-                        <Field label="Salida · desde (hora)"><input type="number" min={0} max={23} value={s.reminder_checkout_start ?? 18} onChange={(e) => set('reminder_checkout_start', e.target.value)} style={inp} /></Field>
-                        <Field label="Salida · hasta (hora)"><input type="number" min={0} max={24} value={s.reminder_checkout_end ?? 20} onChange={(e) => set('reminder_checkout_end', e.target.value)} style={inp} /></Field>
+                        <Field label="Entrada · desde"><SelectHora value={Number(s.reminder_checkin_start ?? 9)} onChange={(v) => set('reminder_checkin_start', v)} /></Field>
+                        <Field label="Entrada · hasta"><SelectHora value={Number(s.reminder_checkin_end ?? 13)} onChange={(v) => set('reminder_checkin_end', v)} fin /></Field>
+                        <Field label="Salida · desde"><SelectHora value={Number(s.reminder_checkout_start ?? 18)} onChange={(v) => set('reminder_checkout_start', v)} /></Field>
+                        <Field label="Salida · hasta"><SelectHora value={Number(s.reminder_checkout_end ?? 20)} onChange={(v) => set('reminder_checkout_end', v)} fin /></Field>
                     </div>
                     <div style={{ marginTop: 16 }}>
                         <label style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-2)', display: 'block', marginBottom: 8 }}>Días laborales</label>
@@ -156,6 +156,21 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
                 <span style={{ position: 'absolute', top: 3, left: value ? 21 : 3, width: 20, height: 20, borderRadius: '50%', background: '#fff', boxShadow: 'var(--shadow-1)', transition: 'left 0.15s' }} />
             </button>
         </div>
+    );
+}
+
+// Selector en vez de campo numérico: la franja se elige de una lista de horas en punto.
+// El job compara horas enteras, así que acá NO va type="time": aceptaría 9:30 y el
+// backend lo truncaría en silencio.
+function SelectHora({ value, onChange, fin = false }: { value: number; onChange: (v: string) => void; fin?: boolean }) {
+    const horas = fin ? Array.from({ length: 24 }, (_, i) => i + 1) : Array.from({ length: 24 }, (_, i) => i);
+    return (
+        <select value={String(value)} onChange={(e) => onChange(e.target.value)} style={inp}>
+            {horas.map((h) => (
+                // 24 no es una hora: es "hasta el final del día" (el job compara con `< fin`).
+                <option key={h} value={h}>{h === 24 ? '24:00 (fin del día)' : `${String(h).padStart(2, '0')}:00`}</option>
+            ))}
+        </select>
     );
 }
 

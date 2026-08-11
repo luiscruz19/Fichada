@@ -1,4 +1,5 @@
 import Shift from '../../models/Shift.js';
+import Break from '../../models/Break.js';
 import recordAudit from '../audit-log/record-audit.js';
 import computeWorkedSeconds from '../shift/compute-worked-seconds.js';
 
@@ -7,11 +8,20 @@ import computeWorkedSeconds from '../shift/compute-worked-seconds.js';
  *  - type 'edit': ajusta la entrada/salida de una jornada existente.
  *  - type 'add':  crea una jornada faltante (origin 'correction', sin ubicación).
  * Deja registro en la auditoría con el valor anterior y el nuevo.
+ *
+ * `ajustes` permite que el admin apruebe con una hora distinta a la que pidió el empleado:
+ * la solicitud original NO se pisa (queda como registro de lo que se pidió) y la auditoría
+ * guarda el valor que efectivamente se aplicó.
  */
-export default async function applyCorrection(request, adminId, transaction) {
+export default async function applyCorrection(request, adminId, transaction, ajustes = {}) {
+    // Motivo del empleado; si no escribió ninguno (ahora es opcional), dejamos rastro igual:
+    // la auditoría no puede quedar sin el porqué de un cambio de horas.
+    const motivo = (request.reason && request.reason.trim())
+        || `Corrección aprobada sin motivo (solicitud #${request.id})`;
+
     if (request.type === 'add') {
-        const checkIn = request.requested_check_in;
-        const checkOut = request.requested_check_out ?? null;
+        const checkIn = ajustes.check_in ?? request.requested_check_in;
+        const checkOut = ajustes.check_out ?? request.requested_check_out ?? null;
         const worked = checkOut ? computeWorkedSeconds(checkIn, checkOut, []) : null;
 
         const shift = await Shift.create({
@@ -31,7 +41,7 @@ export default async function applyCorrection(request, adminId, transaction) {
             action: 'shift_created',
             old_values: null,
             new_values: { check_in: shift.check_in, check_out: shift.check_out },
-            reason: request.reason,
+            reason: motivo,
             source: 'admin_panel',
         }, { transaction });
 
@@ -47,13 +57,18 @@ export default async function applyCorrection(request, adminId, transaction) {
     const old_values = { check_in: shift.check_in, check_out: shift.check_out, worked_seconds: shift.worked_seconds };
 
     const updates = {};
-    if (request.requested_check_in != null) updates.check_in = request.requested_check_in;
-    if (request.requested_check_out != null) updates.check_out = request.requested_check_out;
+    const pedidoIn = ajustes.check_in ?? request.requested_check_in;
+    const pedidoOut = ajustes.check_out ?? request.requested_check_out;
+    if (pedidoIn != null) updates.check_in = pedidoIn;
+    if (pedidoOut != null) updates.check_out = pedidoOut;
 
     const newCheckIn = updates.check_in ?? shift.check_in;
     const newCheckOut = updates.check_out ?? shift.check_out;
     if (newCheckOut) {
-        updates.worked_seconds = computeWorkedSeconds(newCheckIn, newCheckOut, []);
+        // Las pausas de la jornada se descuentan igual que al fichar la salida: sin esto,
+        // aprobar una corrección sobre una jornada con pausas infla las horas trabajadas.
+        const breaks = await Break.findAll({ where: { shift_id: shift.id }, transaction });
+        updates.worked_seconds = computeWorkedSeconds(newCheckIn, newCheckOut, breaks);
         updates.status = 'closed';
     }
 
@@ -66,7 +81,7 @@ export default async function applyCorrection(request, adminId, transaction) {
         action: 'shift_updated',
         old_values,
         new_values: { check_in: shift.check_in, check_out: shift.check_out, worked_seconds: shift.worked_seconds },
-        reason: request.reason,
+        reason: motivo,
         source: 'admin_panel',
     }, { transaction });
 
