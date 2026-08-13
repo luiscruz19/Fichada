@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { ensureGoogleMaps, circleIcon, MARK_COLOR as COLOR } from '@/lib/gmaps';
+import { ensureGoogleMaps, circleIcon, colorDensidad, MARK_COLOR as COLOR } from '@/lib/gmaps';
 import { Ic } from './icons';
 
 export type MapPoint = {
@@ -17,7 +17,7 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
     const mapEl = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const markersRef = useRef<any[]>([]);
-    const heatRef = useRef<any>(null);
+    const heatRef = useRef<any[]>([]);
     const [filter, setFilter] = useState<'all' | 'in' | 'out'>('all');
     const [mode, setMode] = useState<'pins' | 'heat'>('pins');
     const [status, setStatus] = useState<'loading' | 'ready' | 'nokey' | 'error'>('loading');
@@ -50,7 +50,8 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
         const g = (window as any).google;
         markersRef.current.forEach((m) => m.setMap(null));
         markersRef.current = [];
-        if (heatRef.current) { heatRef.current.setMap(null); heatRef.current = null; }
+        heatRef.current.forEach((c) => c.setMap(null));
+        heatRef.current = [];
 
         const visible = points.filter((p) => filter === 'all' || p.kind === filter);
         if (visible.length === 0) return;
@@ -58,13 +59,41 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
         const bounds = new g.maps.LatLngBounds();
         visible.forEach((p) => bounds.extend(new g.maps.LatLng(p.lat, p.lng)));
 
-        if (mode === 'heat' && g.maps.visualization) {
-            heatRef.current = new g.maps.visualization.HeatmapLayer({
-                data: visible.map((p) => new g.maps.LatLng(p.lat, p.lng)),
-                radius: 30,
-                opacity: 0.8,
-            });
-            heatRef.current.setMap(mapRef.current);
+        if (mode === 'heat') {
+            // Mapa de densidad propio: Google eliminó HeatmapLayer en la versión 3.65 de la
+            // API. Agrupamos las fichadas en celdas de ~110 m (3 decimales) y dibujamos un
+            // círculo por zona, con tamaño y color según cuántas fichadas cayeron ahí.
+            const celdas = new Map<string, { lat: number; lng: number; n: number }>();
+            for (const p of visible) {
+                const k = `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;
+                const c = celdas.get(k) || { lat: 0, lng: 0, n: 0 };
+                c.lat += p.lat; c.lng += p.lng; c.n += 1;
+                celdas.set(k, c);
+            }
+            const zonas = [...celdas.values()].map((c) => ({ lat: c.lat / c.n, lng: c.lng / c.n, n: c.n }));
+            const maxN = Math.max(...zonas.map((z) => z.n));
+
+            for (const z of zonas) {
+                const ratio = maxN === 1 ? 1 : (z.n - 1) / (maxN - 1);
+                const color = colorDensidad(ratio);
+                const circle = new g.maps.Circle({
+                    map: mapRef.current,
+                    center: { lat: z.lat, lng: z.lng },
+                    radius: Math.min(220, 45 + z.n * 18),
+                    fillColor: color,
+                    fillOpacity: 0.38,
+                    strokeColor: color,
+                    strokeOpacity: 0.85,
+                    strokeWeight: 1.5,
+                });
+                const info = new g.maps.InfoWindow();
+                circle.addListener('click', (e: any) => {
+                    info.setContent(`<div style="font-family:system-ui;font-size:13px"><strong>${z.n}</strong> fichada${z.n === 1 ? '' : 's'} en esta zona</div>`);
+                    info.setPosition(e.latLng);
+                    info.open(mapRef.current);
+                });
+                heatRef.current.push(circle);
+            }
         } else {
             const info = new g.maps.InfoWindow();
             for (const p of visible) {
@@ -123,7 +152,11 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
                     </div>
                 )}
                 {mode === 'heat' && (
-                    <div style={{ marginLeft: 'auto', fontSize: 12.5, color: 'var(--ink-3)' }}>Zonas con más fichadas = más intensidad</div>
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 8, fontSize: 12.5, color: 'var(--ink-3)' }}>
+                        <span>menos fichadas</span>
+                        <span style={{ width: 90, height: 10, borderRadius: 5, background: 'linear-gradient(90deg, rgb(34,197,94), rgb(234,179,8), rgb(249,115,22), rgb(220,38,38))' }} />
+                        <span>más</span>
+                    </div>
                 )}
             </div>
 

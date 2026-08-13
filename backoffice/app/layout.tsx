@@ -1,9 +1,13 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { BASE_PATH } from '@/lib/config';
 
 export const metadata: Metadata = {
     title: 'Fichada — Panel de administración',
     description: 'Control de horas trabajadas y ubicaciones de fichaje',
+    // Explícito: Next enlaza el manifest en la raíz del dominio y el panel se sirve bajo
+    // /backoffice, así que sin esto el navegador pide /manifest.webmanifest y recibe 404.
+    manifest: `${BASE_PATH}/manifest.webmanifest`,
 };
 
 export const viewport: Viewport = {
