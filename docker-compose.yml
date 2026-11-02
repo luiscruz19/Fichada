@@ -2,16 +2,12 @@
 # Requisitos: que /opt/shared esté levantado (red net-shared + mysql_db + traefik).
 #   make up   (crea .env, asegura las DBs y levanta los servicios)
 # Acceso (vía Traefik):
-#   - Backoffice:  http://fichada.localhost
+#   - Backoffice:  http://fichada.localhost/backoffice
 #   - API:         http://fichada-api.localhost   (login del cliente: POST /auth/login)
 #   - Auth y Mailer: internos (solo net-shared), no expuestos.
 name: fichada
 
 services:
-  ##----------------------------------------------
-  ##        SERVICIOS CORE (internos)
-  ##----------------------------------------------
-
   fichada_auth:
     build:
       context: ./services/auth
@@ -40,10 +36,6 @@ services:
       - TZ=America/Argentina/Buenos_Aires
     networks:
       - net-shared
-
-  ##----------------------------------------------
-  ##        DOMINIO + PANEL
-  ##----------------------------------------------
 
   fichada_api:
     build:
