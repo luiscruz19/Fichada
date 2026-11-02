@@ -1,25 +1,13 @@
 import rateLimit from 'express-rate-limit';
 
-export const signupLimit = rateLimit({
+const limiter = (max, message) => rateLimit({
     windowMs: 15 * 60 * 1000,
-    max: 5,
-    message: { status: 0, message: 'Demasiados registros. Intentá nuevamente en 15 minutos.' },
+    max,
+    message: { status: 0, message },
     standardHeaders: true,
     legacyHeaders: false,
 });
 
-export const forgotPasswordLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 3,
-    message: { status: 0, message: 'Demasiadas solicitudes. Intentá nuevamente en 15 minutos.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
-
-export const totpLimit = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 10,
-    message: { status: 0, message: 'Demasiados intentos. Esperá 15 minutos.' },
-    standardHeaders: true,
-    legacyHeaders: false,
-});
+export const signupLimit = limiter(5, 'Demasiados registros. Intentá nuevamente en 15 minutos.');
+export const forgotPasswordLimit = limiter(3, 'Demasiadas solicitudes. Intentá nuevamente en 15 minutos.');
+export const totpLimit = limiter(10, 'Demasiados intentos. Esperá 15 minutos.');

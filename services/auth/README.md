@@ -191,7 +191,6 @@ The production image uses Node 22 Alpine with `dumb-init` for correct signal han
 | JWT | HS256, signed with `SECRET_KEY`. Expiry enforced both by `jsonwebtoken` and an extra guard against `exp=0/NaN` tokens. |
 | Password history | Previous password hash stored; re-use of the last password is rejected. |
 | Audit log | Every login attempt (success, failure, block, 2FA pending) written to `login_logs` with IP, user-agent and origin. |
-| Secrets in transit | `Authorization` and `token` headers redacted in the dev debug middleware. |
 | HTTP hardening | `helmet` (HSTS in production, no CSP for API-only service, X-Frame-Options: DENY). |
 | CORS | Explicit allowlist from `CORS_ALLOWED_ORIGINS`; server-to-server calls (no Origin) are always allowed. |
 | Request tracing | `X-Request-ID` header propagated on every response; available as `req.id` for structured logging. |

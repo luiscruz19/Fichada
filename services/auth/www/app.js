@@ -2,7 +2,6 @@ import express from 'express';
 
 import routes from '../routes/index.js';
 import Authorization from '../middlewares/authorization.js';
-import Debug from '../middlewares/debug.js';
 import { applySecurity } from '../middlewares/security.js';
 import requestId from '../middlewares/request-id.js';
 import requestLogger from '../middlewares/request-logger.js';
@@ -30,10 +29,6 @@ app.get('/health', async (_req, res) => {
 });
 
 app.use(Authorization);
-
-if (process.env.NODE_ENV !== 'production') {
-    app.use(Debug);
-}
 
 app.use('/', routes);
 
