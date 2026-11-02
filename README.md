@@ -120,3 +120,12 @@ El `docker-compose.yml` de desarrollo no le pasa `GOOGLE_MAPS_API_KEY` al panel:
 - Estos ajustes se guardan pero ningún flujo los aplica: ubicación obligatoria (siempre lo es), redondeo, tolerancia de tardanza, zona horaria, jornada y entrada por defecto.
 - La tolerancia de puntualidad de los reportes está fija en 5 minutos.
 - El registro de auditoría se consulta solo por API; el panel no tiene pantalla para verlo.
+
+## Firebase
+
+`app/google-services.json` no se versiona. Para compilar la app, copialo en `app/`. En EAS, cargalo como variable de tipo archivo:
+
+```bash
+cd app
+eas env:create --name GOOGLE_SERVICES_JSON --type file --value ./google-services.json --visibility secret
+```
