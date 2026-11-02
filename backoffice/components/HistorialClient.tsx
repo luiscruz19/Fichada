@@ -21,7 +21,6 @@ export function HistorialClient({ rows, counts, exportBase, exportQuery = '', ra
 
     return (
         <main style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', position: 'relative', minHeight: '100vh' }}>
-            {/* header */}
             <div style={{ padding: '20px 28px 0', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
                 <div>
                     <h1 style={{ margin: 0, fontSize: 23, fontWeight: 700, letterSpacing: '-0.02em' }}>Historial</h1>
@@ -34,19 +33,16 @@ export function HistorialClient({ rows, counts, exportBase, exportQuery = '', ra
                 </div>
             </div>
 
-            {/* filtro de fechas */}
             <div style={{ padding: '14px 28px 0' }}>
                 <DateRangePicker defaultPreset="month" />
             </div>
 
-            {/* casos a revisar */}
             <div style={{ padding: '16px 28px 14px', display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
                 <span style={{ fontSize: 12.5, fontWeight: 600, color: 'var(--ink-3)' }}>Casos a revisar:</span>
                 <ChipTone tone="warn" icon={Ic.alert({ size: 13 })}>{counts.open} jornadas abiertas</ChipTone>
                 <ChipTone tone="accent" icon={Ic.bell({ size: 13 })}>{counts.req} solicitudes de corrección</ChipTone>
             </div>
 
-            {/* tabla */}
             <div style={{ flex: 1, overflowY: 'auto', padding: '0 28px 24px' }}>
                 <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, overflow: 'hidden', boxShadow: 'var(--shadow-1)' }}>
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
@@ -108,8 +104,7 @@ function CampoLectura({ label, value }: { label: string; value: string }) {
     );
 }
 
-// Selector real y controlado. datetime-local y no time: la salida de un turno nocturno
-// cae al día siguiente y con type="time" no habría forma de expresarlo.
+// datetime-local y no time: la salida de un turno nocturno cae al día siguiente.
 function CampoSalida({ value, onChange, edited }: { value: string; onChange: (v: string) => void; edited: boolean }) {
     return (
         <div>
@@ -125,7 +120,6 @@ function CampoSalida({ value, onChange, edited }: { value: string; onChange: (v:
 function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
     const router = useRouter();
     const [busy, setBusy] = useState(false);
-    // Antes esto era un input NO controlado: lo que el admin tipeaba no lo leía nadie.
     const [salida, setSalida] = useState('');
     const req = row?.req ?? null;
     const shift = row?.shift ?? null;
@@ -140,14 +134,13 @@ function Drawer({ row, onClose }: { row: Row | null; onClose: () => void }) {
     async function resolve(action: 'approve' | 'reject') {
         if (!req) return;
         const iso = fromInputLocal(salida);
-        if (action === 'approve' && !iso) return; // sin hora válida no se aprueba
+        if (action === 'approve' && !iso) return;
         setBusy(true);
         try {
             await fetch(`${BASE_PATH}/api/correction/${req.id}/${action}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                // El admin aprueba la hora que ve en pantalla, que puede no ser la que pidió
-                // el empleado. La solicitud original queda intacta y la diferencia se audita.
+                // Se aprueba la hora en pantalla; la solicitud queda intacta y la diferencia se audita.
                 body: JSON.stringify(action === 'approve' ? { requested_check_out: iso } : {}),
             });
             onClose();

@@ -7,8 +7,6 @@ import { FichadaMap, type FichadaPoint } from './FichadaMap';
 import { fmtTime, fmtDateShort, secondsToHHMM } from '@/lib/format';
 import type { Shift } from '@/lib/types';
 
-// Tabla de jornadas de un empleado; al hacer clic en una fila abre un drawer con el
-// detalle y el mapa de esa fichada (mismo patrón que el Historial).
 export function EmpleadoShifts({ shifts, name }: { shifts: Shift[]; name: string }) {
     const [sel, setSel] = useState<Shift | null>(null);
 

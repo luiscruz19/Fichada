@@ -159,15 +159,13 @@ function Toggle({ label, value, onChange }: { label: string; value: boolean; onC
     );
 }
 
-// Selector en vez de campo numérico: la franja se elige de una lista de horas en punto.
-// El job compara horas enteras, así que acá NO va type="time": aceptaría 9:30 y el
-// backend lo truncaría en silencio.
+// El job compara horas enteras: type="time" aceptaría 9:30 y el backend lo truncaría.
 function SelectHora({ value, onChange, fin = false }: { value: number; onChange: (v: string) => void; fin?: boolean }) {
     const horas = fin ? Array.from({ length: 24 }, (_, i) => i + 1) : Array.from({ length: 24 }, (_, i) => i);
     return (
         <select value={String(value)} onChange={(e) => onChange(e.target.value)} style={inp}>
             {horas.map((h) => (
-                // 24 no es una hora: es "hasta el final del día" (el job compara con `< fin`).
+                // 24 significa "hasta el final del día": el job compara con `< fin`.
                 <option key={h} value={h}>{h === 24 ? '24:00 (fin del día)' : `${String(h).padStart(2, '0')}:00`}</option>
             ))}
         </select>

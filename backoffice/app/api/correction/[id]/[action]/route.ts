@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
 import { apiFetch } from '@/lib/api';
 
-// Proxy server-side: aprueba/rechaza una solicitud de corrección con el JWT del admin (cookie).
 export async function POST(req: Request, { params }: { params: { id: string; action: string } }) {
     const { id, action } = params;
     if (action !== 'approve' && action !== 'reject') {

@@ -3,8 +3,6 @@
 import { useState } from 'react';
 import { Ic } from './icons';
 
-// Input de contraseña con "ojito" para mostrar/ocultar. Estándar para todo campo de
-// password del panel.
 export function PasswordInput({
     value, onChange, placeholder, autoFocus, inputStyle, name,
 }: {

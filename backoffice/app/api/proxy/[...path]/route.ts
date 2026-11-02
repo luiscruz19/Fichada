@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { apiFetch } from '@/lib/api';
 
-// Proxy genérico server-side: reenvía cualquier llamada a la API de dominio agregando
-// el JWT del admin (cookie httpOnly). El cliente nunca ve el token.
+// El JWT vive en una cookie httpOnly: el cliente nunca lo ve.
 async function handle(req: NextRequest, path: string[]) {
     const qs = new URL(req.url).search;
     const target = '/' + path.join('/') + qs;

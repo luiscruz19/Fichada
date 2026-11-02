@@ -5,8 +5,6 @@ export const TZ = 'America/Argentina/Buenos_Aires';
 
 export type Range = { fromKey: string | null; toKey: string | null };
 
-// Lista de claves de día a graficar: el rango elegido (cap 62 días) o, sin rango,
-// los últimos 14 días.
 function buildDayKeys(range?: Range): string[] {
     let fromK: string, toK: string;
     if (range?.fromKey && range?.toKey) {
@@ -27,7 +25,6 @@ function buildDayKeys(range?: Range): string[] {
     return days;
 }
 
-// Partes de un instante en hora local (AR): hora, minuto y clave de fecha YYYY-MM-DD.
 export function localParts(iso: string): { h: number; m: number; dateKey: string; dow: number } {
     const d = new Date(iso);
     const fmt = new Intl.DateTimeFormat('en-CA', {
@@ -49,7 +46,6 @@ export function todayKey(): string {
     return localParts(new Date().toISOString()).dateKey;
 }
 
-// "HH:MM[:SS]" → minutos desde medianoche. null si no parsea.
 function hhmmToMin(s?: string | null): number | null {
     if (!s) return null;
     const m = /^(\d{1,2}):(\d{2})/.exec(s);
@@ -65,8 +61,8 @@ export type PersonMetric = {
     seconds: number;
     open: number;
     avgSeconds: number;
-    avgCheckinMin: number | null;   // hora promedio de entrada (min desde 00:00)
-    punctualPct: number | null;     // % de entradas puntuales
+    avgCheckinMin: number | null;
+    punctualPct: number | null;
     lastCheckIn: string | null;
 };
 
@@ -85,14 +81,12 @@ export type Metrics = {
     daily: { key: string; label: string; seconds: number }[];
 };
 
-// Tolerancia (min) para considerar puntual. El backoffice no recibe la de Ajustes en
-// este server component, así que usamos un margen razonable por defecto.
+// Este server component no recibe late_tolerance_minutes de Ajustes.
 const PUNCTUAL_TOLERANCE_MIN = 5;
 
 export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
     const tk = todayKey();
 
-    // Semana: set de las últimas 7 claves de fecha (incluyendo hoy).
     const weekKeys = new Set<string>();
     {
         const base = new Date();
@@ -108,7 +102,6 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
     const allCheckout: number[] = [];
     let punctOk = 0, punctTotal = 0;
 
-    // Serie diaria: el rango elegido (cap 62 días) o los últimos 14 días.
     const dailyMap = new Map<string, number>();
     const dayLabels: { key: string; label: string }[] = [];
     for (const key of buildDayKeys(range)) {
@@ -130,7 +123,6 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
         allCheckin.push(ciMin);
         if (s.check_out) allCheckout.push((() => { const co = localParts(s.check_out); return co.h * 60 + co.m; })());
 
-        // Puntualidad contra la hora esperada del empleado.
         const expected = hhmmToMin(s.employee?.expected_check_in);
         let personPunctOk = 0, personPunctTotal = 0;
         if (expected != null) {

@@ -8,7 +8,6 @@ const BASIC = 'Basic ' + Buffer.from(
 
 export const TOKEN_COOKIE = 'fichada_token';
 
-/** Login contra el servicio auth (Basic Auth servicio↔servicio, server-side). Devuelve el JWT o null. */
 export async function authLogin(email: string, password: string): Promise<string | null> {
     const res = await fetch(`${AUTH_URL}/auth/login`, {
         method: 'POST',
@@ -25,7 +24,6 @@ export function getToken(): string | null {
     return cookies().get(TOKEN_COOKIE)?.value || null;
 }
 
-/** Llama al api de dominio con el JWT del admin (header `token`). */
 export async function apiFetch(path: string, init: RequestInit = {}): Promise<Response> {
     const token = getToken();
     return fetch(`${API_URL}${path}`, {
@@ -45,7 +43,6 @@ export async function apiGetJson<T = any>(path: string): Promise<T | null> {
     }
 }
 
-// Nombre real del admin logueado (para el sidebar), desde su perfil.
 export async function getAdminName(): Promise<string> {
     const json = await apiGetJson<{ data: { first_name: string; last_name: string } }>('/employees/employee/me');
     const d = json?.data;

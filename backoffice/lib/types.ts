@@ -96,7 +96,6 @@ export type AuditLog = {
     created_at: string;
 };
 
-// Fila de la tabla de Historial (derivada de un Shift).
 export type Row = {
     shift: Shift;
     emp: string;

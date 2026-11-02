@@ -1,10 +1,7 @@
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
 const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
-// Toda fecha/hora se muestra en la hora oficial (Argentina, UTC−3), sin importar dónde
-// se renderice: el server corre en UTC, y los navegadores en su TZ local. Formatear con
-// getHours()/getDate() usaría la TZ del entorno → horas inconsistentes. Por eso fijamos
-// la zona con Intl.
+// El server corre en UTC y cada navegador en su zona: Intl fija siempre la hora de Argentina.
 const TZ = 'America/Argentina/Buenos_Aires';
 const WEEKDAY: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
@@ -41,8 +38,6 @@ export function initials(name: string): string {
     return name.split(' ').filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
 }
 
-// Puente entre el ISO que guarda la base y el valor 'YYYY-MM-DDTHH:mm' que pide
-// <input type="datetime-local">. Argentina es UTC−3 fijo, igual que la API.
 export function toInputLocal(iso?: string | null): string {
     if (!iso) return '';
     const p = tzParts(iso);
@@ -52,7 +47,7 @@ export function toInputLocal(iso?: string | null): string {
 
 export function fromInputLocal(value: string): string | null {
     if (!value) return null;
-    // El offset explícito evita que el navegador lo interprete en SU zona.
+    // Sin offset explícito, el navegador lo interpretaría en su zona.
     const d = new Date(`${value}:00-03:00`);
     return Number.isNaN(d.getTime()) ? null : d.toISOString();
 }

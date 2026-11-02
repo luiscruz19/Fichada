@@ -5,8 +5,6 @@ import { ensureGoogleMaps, circleIcon, MARK_COLOR } from '@/lib/gmaps';
 
 export type FichadaPoint = { lat: number; lng: number; kind: 'in' | 'out'; label: string };
 
-// Mini-mapa de Google Maps para el detalle de una fichada: pines de entrada (verde)
-// y salida (rojo). Si no hay key o falla, cae a mostrar las coordenadas en texto.
 export function FichadaMap({ points, height = 170 }: { points: FichadaPoint[]; height?: number }) {
     const el = useRef<HTMLDivElement>(null);
     const [status, setStatus] = useState<'loading' | 'ready' | 'nokey' | 'error'>('loading');

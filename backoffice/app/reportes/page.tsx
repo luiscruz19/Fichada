@@ -39,12 +39,10 @@ export default async function ReportesPage({ searchParams }: { searchParams: { f
                     </div>
                 </div>
 
-                {/* Selector de rango de fechas */}
                 <div style={{ padding: '14px 28px 2px' }}>
                     <DateRangePicker defaultPreset="month" />
                 </div>
 
-                {/* Métricas generales */}
                 <div style={{ padding: '14px 28px 4px', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 14 }}>
                     <Stat label={hasRange ? 'Horas del período' : 'Total horas del equipo'} value={secondsToHHMM(m.totalSeconds)} />
                     {hasRange ? (
@@ -63,7 +61,6 @@ export default async function ReportesPage({ searchParams }: { searchParams: { f
                     <Stat label="Jornadas abiertas" value={String(m.openCount)} tone={m.openCount ? 'warn' : undefined} />
                 </div>
 
-                {/* Gráfico: horas por día */}
                 <div style={{ padding: '14px 28px' }}>
                     <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: '16px 20px 14px', boxShadow: 'var(--shadow-1)' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Horas trabajadas por día{hasRange ? '' : ' · últimos 14 días'}</div>
@@ -71,7 +68,6 @@ export default async function ReportesPage({ searchParams }: { searchParams: { f
                     </div>
                 </div>
 
-                {/* Métricas por persona (clic para ver el reporte individual) */}
                 <div style={{ padding: '0 28px 6px', fontSize: 12.5, color: 'var(--ink-3)' }}>Reporte por persona · hacé clic en un empleado para ver su detalle</div>
                 <div style={{ padding: '4px 28px 24px' }}>
                     <ReportesPersonTable rows={m.perPerson} range={{ from: range.fromKey, to: range.toKey }} />

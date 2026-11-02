@@ -77,7 +77,6 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
                     <Stat label="Jornadas abiertas" value={String(m.openCount)} />
                 </div>
 
-                {/* Gráfico horas/día */}
                 <div style={{ padding: '14px 28px' }}>
                     <div style={{ background: 'var(--surface)', border: '1px solid var(--hairline)', borderRadius: 16, padding: '16px 20px 14px', boxShadow: 'var(--shadow-1)' }}>
                         <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 16 }}>Horas por día</div>
@@ -85,13 +84,11 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
                     </div>
                 </div>
 
-                {/* Mapa de sus fichadas */}
                 <div style={{ padding: '4px 28px' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, margin: '4px 0 10px' }}>Ubicaciones de sus fichadas</div>
                     <div style={{ height: 380 }}><MapaClient points={points} /></div>
                 </div>
 
-                {/* Sus jornadas (clic para ver el detalle con mapa) */}
                 <div style={{ padding: '14px 28px 24px' }}>
                     <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 4 }}>Jornadas <span style={{ fontWeight: 500, color: 'var(--ink-3)' }}>· clic para ver el detalle en el mapa</span></div>
                     <EmpleadoShifts shifts={shifts} name={name} />
