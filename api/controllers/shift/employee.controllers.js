@@ -1,4 +1,3 @@
-import { Op } from 'sequelize';
 import sequelize from '../../db/sequelize.js';
 import Shift from '../../models/Shift.js';
 import Break from '../../models/Break.js';
@@ -6,10 +5,13 @@ import Setting from '../../models/Setting.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 import getOpenShift from '../../services/shift/get-open-shift.js';
 import computeWorkedSeconds from '../../services/shift/compute-worked-seconds.js';
+import checkInRange from '../../services/shift/check-in-range.js';
 
 async function getSettings(options = {}) {
     return Setting.findOne({ order: [['id', 'ASC']], ...options });
 }
+
+const hasOpenBreak = (shift) => (shift.breaks || []).some(b => !b.break_end);
 
 export async function currentStatus(req, res) {
     try {
@@ -23,9 +25,8 @@ export async function currentStatus(req, res) {
             }));
         }
 
-        const onBreak = (open.breaks || []).some(b => !b.break_end);
         return res.status(200).json(successMessage({
-            extra: { data: { status: onBreak ? 'on_break' : 'in', shift: open } }
+            extra: { data: { status: hasOpenBreak(open) ? 'on_break' : 'in', shift: open } }
         }));
     } catch (error) {
         return res.status(500).json(errorMessage({
@@ -87,8 +88,7 @@ export async function clockOut(req, res) {
             }));
         }
 
-        const onBreak = (open.breaks || []).some(b => !b.break_end);
-        if (onBreak) {
+        if (hasOpenBreak(open)) {
             await transaction.rollback();
             return res.status(409).json(errorMessage({
                 message: 'Tenés una pausa en curso. Volvé de la pausa antes de fichar salida.'
@@ -144,15 +144,14 @@ export async function startBreak(req, res) {
             }));
         }
 
-        const onBreak = (open.breaks || []).some(b => !b.break_end);
-        if (onBreak) {
+        if (hasOpenBreak(open)) {
             await transaction.rollback();
             return res.status(409).json(errorMessage({
                 message: 'Ya tenés una pausa en curso.'
             }));
         }
 
-        const br = await Break.create({
+        const newBreak = await Break.create({
             shift_id: open.id,
             break_start: new Date(),
         }, { transaction });
@@ -160,7 +159,7 @@ export async function startBreak(req, res) {
         await transaction.commit();
         return res.status(201).json(successMessage({
             message: 'Pausa iniciada',
-            extra: { data: br }
+            extra: { data: newBreak }
         }));
     } catch (error) {
         await transaction.rollback();
@@ -182,11 +181,11 @@ export async function endBreak(req, res) {
             }));
         }
 
-        const br = await Break.findOne({
+        const currentBreak = await Break.findOne({
             where: { shift_id: open.id, break_end: null },
             transaction,
         });
-        if (!br) {
+        if (!currentBreak) {
             await transaction.rollback();
             return res.status(409).json(errorMessage({
                 message: 'No tenés ninguna pausa en curso.'
@@ -194,14 +193,14 @@ export async function endBreak(req, res) {
         }
 
         const end = new Date();
-        const duration = Math.max(0, Math.floor((end - new Date(br.break_start)) / 1000));
+        const duration = Math.max(0, Math.floor((end - new Date(currentBreak.break_start)) / 1000));
 
-        await br.update({ break_end: end, duration_seconds: duration }, { transaction });
+        await currentBreak.update({ break_end: end, duration_seconds: duration }, { transaction });
 
         await transaction.commit();
         return res.status(200).json(successMessage({
             message: 'Pausa finalizada',
-            extra: { data: br }
+            extra: { data: currentBreak }
         }));
     } catch (error) {
         await transaction.rollback();
@@ -215,13 +214,7 @@ export async function endBreak(req, res) {
 export async function myHistory(req, res) {
     try {
         const { from, to } = req.query;
-        const where = { employee_id: req.employee.id };
-
-        if (from || to) {
-            where.check_in = {};
-            if (from) where.check_in[Op.gte] = new Date(from);
-            if (to) where.check_in[Op.lte] = new Date(to);
-        }
+        const where = { employee_id: req.employee.id, ...checkInRange(from, to) };
 
         const shifts = await Shift.findAll({
             where,

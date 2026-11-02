@@ -1,9 +1,9 @@
-import { Op } from 'sequelize';
 import Shift from '../../models/Shift.js';
 import Break from '../../models/Break.js';
 import Employee from '../../models/Employee.js';
+import checkInRange from './check-in-range.js';
 
-const TZ = 'America/Argentina/Buenos_Aires';
+export const TZ = 'America/Argentina/Buenos_Aires';
 
 function fmtDate(d) {
     if (!d) return '';
@@ -19,7 +19,7 @@ function secondsToHHMM(s) {
     const m = Math.floor((s % 3600) / 60);
     return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
 }
-function loc(lat, lng) {
+function fmtLocation(lat, lng) {
     if (lat == null || lng == null) return '';
     return `${lat}, ${lng}`;
 }
@@ -38,14 +38,9 @@ export const REPORT_COLUMNS = [
 ];
 
 export default async function buildReportRows({ employee_id, status, from, to } = {}) {
-    const where = {};
+    const where = { ...checkInRange(from, to) };
     if (employee_id) where.employee_id = employee_id;
     if (status) where.status = status;
-    if (from || to) {
-        where.check_in = {};
-        if (from) where.check_in[Op.gte] = new Date(from);
-        if (to) where.check_in[Op.lte] = new Date(to);
-    }
 
     const shifts = await Shift.findAll({
         where,
@@ -56,19 +51,19 @@ export default async function buildReportRows({ employee_id, status, from, to } 
         order: [['check_in', 'DESC']],
     });
 
-    return shifts.map(s => {
-        const e = s.employee;
+    return shifts.map(shift => {
+        const { employee } = shift;
         return {
-            employee: e ? `${e.last_name}, ${e.first_name}` : `#${s.employee_id}`,
-            email: e?.email || '',
-            date: fmtDate(s.check_in),
-            check_in: fmtTime(s.check_in),
-            check_out: fmtTime(s.check_out) || '—',
-            breaks: (s.breaks || []).length,
-            worked: secondsToHHMM(s.worked_seconds) || '—',
-            status: s.status === 'open' ? 'Abierta' : 'Cerrada',
-            check_in_location: loc(s.check_in_lat, s.check_in_lng) || '—',
-            check_out_location: loc(s.check_out_lat, s.check_out_lng) || '—',
+            employee: employee ? `${employee.last_name}, ${employee.first_name}` : `#${shift.employee_id}`,
+            email: employee?.email || '',
+            date: fmtDate(shift.check_in),
+            check_in: fmtTime(shift.check_in),
+            check_out: fmtTime(shift.check_out) || '—',
+            breaks: (shift.breaks || []).length,
+            worked: secondsToHHMM(shift.worked_seconds) || '—',
+            status: shift.status === 'open' ? 'Abierta' : 'Cerrada',
+            check_in_location: fmtLocation(shift.check_in_lat, shift.check_in_lng) || '—',
+            check_out_location: fmtLocation(shift.check_out_lat, shift.check_out_lng) || '—',
         };
     });
 }

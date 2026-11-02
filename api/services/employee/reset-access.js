@@ -1,19 +1,9 @@
 import CONFIG from '../../config/config.js';
+import { basicAuth } from '../../utils/basic-auth.js';
+import genTempPassword from './temp-password.js';
 
 const { AUTH_API_URL, AUTHORIZATION, SECRET_KEY } = CONFIG;
-const authBasic = 'Basic ' + Buffer.from(`${AUTHORIZATION.USER}:${AUTHORIZATION.PASSWORD}`).toString('base64');
-
-// Contraseña temporal que cumple la política de auth.
-function genTempPassword() {
-    const low = 'abcdefghijkmnpqrstuvwxyz';
-    const up = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const dig = '23456789';
-    const pick = (s) => s[Math.floor(Math.random() * s.length)];
-    let s = pick(up);
-    for (let i = 0; i < 5; i++) s += pick(low);
-    s += pick(dig);
-    return s + '!';
-}
+const authBasic = basicAuth(AUTHORIZATION);
 
 export default async function resetAccess(userId) {
     const tempPassword = genTempPassword();
@@ -23,8 +13,8 @@ export default async function resetAccess(userId) {
         body: JSON.stringify({ user_id: userId, password: tempPassword }),
     });
     if (!res.ok) {
-        const j = await res.json().catch(() => null);
-        throw new Error(j?.message || 'No se pudo regenerar la contraseña');
+        const json = await res.json().catch(() => null);
+        throw new Error(json?.message || 'No se pudo regenerar la contraseña');
     }
     return tempPassword;
 }

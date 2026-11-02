@@ -1,20 +1,10 @@
 import CONFIG from '../../config/config.js';
+import { basicAuth } from '../../utils/basic-auth.js';
+import genTempPassword from './temp-password.js';
 
-const { AUTH_API_URL, MAILER_API_URL, AUTHORIZATION, MAILER_AUTH, WEB_URL, ADMIN } = CONFIG;
-const authBasic = 'Basic ' + Buffer.from(`${AUTHORIZATION.USER}:${AUTHORIZATION.PASSWORD}`).toString('base64');
-const mailerBasic = 'Basic ' + Buffer.from(`${MAILER_AUTH.USER}:${MAILER_AUTH.PASSWORD}`).toString('base64');
-
-// Contraseña temporal que cumple la política de auth (mayúscula, minúscula, dígito, especial).
-function genTempPassword() {
-    const low = 'abcdefghijkmnpqrstuvwxyz';
-    const up = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
-    const dig = '23456789';
-    const pick = (s) => s[Math.floor(Math.random() * s.length)];
-    let s = pick(up);
-    for (let i = 0; i < 5; i++) s += pick(low);
-    s += pick(dig);
-    return s + '!';
-}
+const { AUTH_API_URL, MAILER_API_URL, AUTHORIZATION, MAILER_AUTH } = CONFIG;
+const authBasic = basicAuth(AUTHORIZATION);
+const mailerBasic = basicAuth(MAILER_AUTH);
 
 function inviteHtml({ firstName, email, tempPassword }) {
     return `

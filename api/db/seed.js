@@ -3,15 +3,15 @@ import '../models/index.js';
 import Employee from '../models/Employee.js';
 import Setting from '../models/Setting.js';
 import CONFIG from '../config/config.js';
+import { basicAuth } from '../utils/basic-auth.js';
 
 async function resolveAuthUserId(email) {
     const { AUTH_API_URL, AUTHORIZATION } = CONFIG;
     if (!AUTH_API_URL) throw new Error('AUTH_API_URL no está configurado');
 
-    const basic = Buffer.from(`${AUTHORIZATION.USER}:${AUTHORIZATION.PASSWORD}`).toString('base64');
     const url = `${AUTH_API_URL}/auth/user-by-email/${encodeURIComponent(email)}`;
 
-    const res = await fetch(url, { headers: { Authorization: `Basic ${basic}` } });
+    const res = await fetch(url, { headers: { Authorization: basicAuth(AUTHORIZATION) } });
     if (!res.ok) {
         throw new Error(`auth respondió ${res.status} al resolver ${email}`);
     }
@@ -45,11 +45,11 @@ async function resolveAuthUserId(email) {
         console.info(`✓ Employee admin ${created ? 'creado' : 'asegurado'} (id=${employee.id}, user_id=${userId})`);
 
         const settings = await Setting.findOne({ order: [['id', 'ASC']] });
-        if (!settings) {
+        if (settings) {
+            console.info('✓ Ajustes globales ya existían');
+        } else {
             await Setting.create({});
             console.info('✓ Ajustes globales creados con los valores por defecto');
-        } else {
-            console.info('✓ Ajustes globales ya existían');
         }
 
         console.info('Seed completado.');

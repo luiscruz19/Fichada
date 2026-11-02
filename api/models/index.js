@@ -43,15 +43,3 @@ export {
     Notification,
 };
 
-export default {
-    sequelize,
-    Employee,
-    Shift,
-    Break,
-    CorrectionRequest,
-    AuditLog,
-    Site,
-    Setting,
-    Device,
-    Notification,
-};

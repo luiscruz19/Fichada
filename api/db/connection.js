@@ -17,5 +17,3 @@ import '../models/index.js';
         console.error('No se pudo conectar/sincronizar la base de datos:', error.message);
     }
 })();
-
-export default sequelize;

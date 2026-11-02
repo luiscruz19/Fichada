@@ -4,14 +4,14 @@ import recordAudit from '../audit-log/record-audit.js';
 import computeWorkedSeconds from '../shift/compute-worked-seconds.js';
 
 // Si el admin ajusta la hora, la solicitud no se pisa: la auditoría guarda lo que se aplicó.
-export default async function applyCorrection(request, adminId, transaction, ajustes = {}) {
+export default async function applyCorrection(request, adminId, transaction, overrides = {}) {
     // El motivo es opcional, pero la auditoría no puede quedar sin el porqué de un cambio de horas.
-    const motivo = (request.reason && request.reason.trim())
+    const reason = request.reason?.trim()
         || `Corrección aprobada sin motivo (solicitud #${request.id})`;
 
     if (request.type === 'add') {
-        const checkIn = ajustes.check_in ?? request.requested_check_in;
-        const checkOut = ajustes.check_out ?? request.requested_check_out ?? null;
+        const checkIn = overrides.check_in ?? request.requested_check_in;
+        const checkOut = overrides.check_out ?? request.requested_check_out ?? null;
         const worked = checkOut ? computeWorkedSeconds(checkIn, checkOut, []) : null;
 
         const shift = await Shift.create({
@@ -31,7 +31,7 @@ export default async function applyCorrection(request, adminId, transaction, aju
             action: 'shift_created',
             old_values: null,
             new_values: { check_in: shift.check_in, check_out: shift.check_out },
-            reason: motivo,
+            reason,
             source: 'admin_panel',
         }, { transaction });
 
@@ -46,10 +46,10 @@ export default async function applyCorrection(request, adminId, transaction, aju
     const old_values = { check_in: shift.check_in, check_out: shift.check_out, worked_seconds: shift.worked_seconds };
 
     const updates = {};
-    const pedidoIn = ajustes.check_in ?? request.requested_check_in;
-    const pedidoOut = ajustes.check_out ?? request.requested_check_out;
-    if (pedidoIn != null) updates.check_in = pedidoIn;
-    if (pedidoOut != null) updates.check_out = pedidoOut;
+    const requestedIn = overrides.check_in ?? request.requested_check_in;
+    const requestedOut = overrides.check_out ?? request.requested_check_out;
+    if (requestedIn != null) updates.check_in = requestedIn;
+    if (requestedOut != null) updates.check_out = requestedOut;
 
     const newCheckIn = updates.check_in ?? shift.check_in;
     const newCheckOut = updates.check_out ?? shift.check_out;
@@ -69,7 +69,7 @@ export default async function applyCorrection(request, adminId, transaction, aju
         action: 'shift_updated',
         old_values,
         new_values: { check_in: shift.check_in, check_out: shift.check_out, worked_seconds: shift.worked_seconds },
-        reason: motivo,
+        reason,
         source: 'admin_panel',
     }, { transaction });
 

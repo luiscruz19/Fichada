@@ -3,10 +3,12 @@ import sequelize from '../../db/sequelize.js';
 import Employee from '../../models/Employee.js';
 import Device from '../../models/Device.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
+import { pickDefined } from '../../utils/helpers.js';
 import inviteEmployee from '../../services/employee/invite.js';
 import resetAccess from '../../services/employee/reset-access.js';
 
-const SAFE_ATTRS = { exclude: [] };
+const UPDATABLE_FIELDS = ['first_name', 'last_name', 'email', 'role', 'expected_check_in', 'target_hours', 'work_days'];
+const CLEARED_PIN = { pin_hash: null, pin_attempts: 0, pin_locked_until: null };
 
 export async function listEmployees(req, res) {
     try {
@@ -94,11 +96,7 @@ export async function updateEmployee(req, res) {
         const employee = await Employee.findByPk(req.params.id);
         if (!employee) return res.status(404).json(errorMessage({ message: 'Empleado no encontrado' }));
 
-        const fields = ['first_name', 'last_name', 'email', 'role', 'expected_check_in', 'target_hours', 'work_days'];
-        const updates = {};
-        for (const f of fields) if (req.body[f] !== undefined) updates[f] = req.body[f];
-
-        await employee.update(updates);
+        await employee.update(pickDefined(req.body, UPDATABLE_FIELDS));
         return res.status(200).json(successMessage({ message: 'Empleado actualizado', extra: { data: employee } }));
     } catch (error) {
         return res.status(500).json(errorMessage({
@@ -140,7 +138,7 @@ export async function regenerateAccess(req, res) {
         if (!employee.user_id) return res.status(400).json(errorMessage({ message: 'El empleado no tiene cuenta de acceso' }));
 
         const tempPassword = await resetAccess(employee.user_id);
-        await employee.update({ pin_hash: null, pin_attempts: 0, pin_locked_until: null });
+        await employee.update(CLEARED_PIN);
 
         return res.status(200).json(successMessage({
             message: 'Acceso regenerado',
@@ -155,7 +153,7 @@ export async function resetPin(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
         if (!employee) return res.status(404).json(errorMessage({ message: 'Empleado no encontrado' }));
-        await employee.update({ pin_hash: null, pin_attempts: 0, pin_locked_until: null });
+        await employee.update(CLEARED_PIN);
         return res.status(200).json(successMessage({ message: 'PIN reseteado' }));
     } catch (error) {
         return res.status(500).json(errorMessage({ message: 'Error al resetear el PIN', extra: { error: error.message } }));

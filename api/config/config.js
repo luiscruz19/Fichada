@@ -3,10 +3,6 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 const CONFIG = {
-    AUTHORIZATION: {
-        USER: process.env.AUTH_BASIC_USER,
-        PASSWORD: process.env.AUTH_BASIC_PW
-    },
     DATABASE: {
         HOST: process.env.DB_HOST || 'localhost',
         USER: process.env.DB_USER || 'root',

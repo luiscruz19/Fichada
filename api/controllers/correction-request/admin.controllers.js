@@ -44,11 +44,11 @@ export async function approveRequest(req, res) {
         }
 
         // El admin puede aprobar con una hora distinta a la pedida.
-        const ajustes = {
+        const overrides = {
             check_in: req.body?.requested_check_in ?? null,
             check_out: req.body?.requested_check_out ?? null,
         };
-        await applyCorrection(request, req.employee?.id ?? null, transaction, ajustes);
+        await applyCorrection(request, req.employee?.id ?? null, transaction, overrides);
 
         await request.update({
             status: 'approved',
