@@ -2,7 +2,10 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Minus, Plus, Check } from 'lucide-react-native';
 import { C, R } from '../theme';
-import { fmtMinutos } from '../helpers';
+import { fmtMinutos, MINUTOS_POR_DIA } from '../helpers';
+
+const PASO_HORA = 60;
+const PASO_MINUTOS = 15;
 
 // En JS a propósito: un selector nativo obligaría a reinstalar el APK, y la app se actualiza por OTA.
 
@@ -30,7 +33,7 @@ function Fila({ etiqueta, onMenos, onMas }) {
 
 export default function SelectorHora({ minutos, onChange, sugeridos = [], diaSiguiente, onDiaSiguiente }) {
     // La hora nunca sale del día: el salto al día siguiente lo decide el toggle.
-    const mover = (delta) => onChange((minutos + delta + 1440) % 1440);
+    const mover = (delta) => onChange((minutos + delta + MINUTOS_POR_DIA) % MINUTOS_POR_DIA);
 
     return (
         <View>
@@ -56,8 +59,8 @@ export default function SelectorHora({ minutos, onChange, sugeridos = [], diaSig
                 </View>
             )}
 
-            <Fila etiqueta="Hora" onMenos={() => mover(-60)} onMas={() => mover(60)} />
-            <Fila etiqueta="Minutos (de a 15)" onMenos={() => mover(-15)} onMas={() => mover(15)} />
+            <Fila etiqueta="Hora" onMenos={() => mover(-PASO_HORA)} onMas={() => mover(PASO_HORA)} />
+            <Fila etiqueta="Minutos (de a 15)" onMenos={() => mover(-PASO_MINUTOS)} onMas={() => mover(PASO_MINUTOS)} />
 
             {onDiaSiguiente ? (
                 // Turno nocturno: sin esto la salida queda antes de la entrada y la jornada en 0 horas.

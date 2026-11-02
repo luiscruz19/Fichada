@@ -8,6 +8,8 @@ const PROD_API = 'https://fichada.sda.ovh/api';
 const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
 const USE_LOCAL = !PUBLIC_API && IS_DEV;
 const BASE = (PUBLIC_API || (IS_DEV ? LOCAL_GATEWAY : PROD_API)).replace(/\/$/, '');
+const TOKEN_KEY = 'fichada_token';
+const CLOCK_SKEW_MS = 30000;
 
 function baseHeaders(extra = {}) {
     const h = { 'Content-Type': 'application/json', ...extra };
@@ -18,16 +20,16 @@ function baseHeaders(extra = {}) {
 let token = null;
 
 export async function loadToken() {
-    token = await getItem('fichada_token');
+    token = await getItem(TOKEN_KEY);
     return token;
 }
-export async function setToken(t) {
+async function setToken(t) {
     token = t;
-    await setItem('fichada_token', t);
+    await setItem(TOKEN_KEY, t);
 }
 export async function clearToken() {
     token = null;
-    await deleteItem('fichada_token');
+    await deleteItem(TOKEN_KEY);
 }
 
 // A mano: en Hermes atob no está garantizado y no vale una dependencia por diez líneas.
@@ -48,7 +50,7 @@ export function tokenVencido(tk) {
     try {
         const p = JSON.parse(b64urlDecode(String(tk).split('.')[1] || ''));
         if (!p || !p.exp) return false;
-        return p.exp * 1000 <= Date.now() + 30000;
+        return p.exp * 1000 <= Date.now() + CLOCK_SKEW_MS;
     } catch { return false; }
 }
 
@@ -66,31 +68,23 @@ async function req(path, opts = {}) {
     return json;
 }
 
-export async function login(email, password) {
-    const res = await fetch(BASE + '/auth/login', {
+async function authenticate(path, credentials, fallbackMessage) {
+    const res = await fetch(BASE + path, {
         method: 'POST',
         headers: baseHeaders(),
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify(credentials),
     });
     const json = await res.json().catch(() => null);
-    if (!json?.user?.token) throw new Error(json?.message || 'Credenciales inválidas');
+    if (!json?.user?.token) throw new Error(json?.message || fallbackMessage);
     await setToken(json.user.token);
     return json.user;
 }
+
+export const login = (email, password) => authenticate('/auth/login', { email, password }, 'Credenciales inválidas');
 
 export const hasPin = (email) => req(`/auth/has-pin?email=${encodeURIComponent(email)}`);
 
-export async function loginPin(email, pin) {
-    const res = await fetch(BASE + '/auth/login-pin', {
-        method: 'POST',
-        headers: baseHeaders(),
-        body: JSON.stringify({ email, pin }),
-    });
-    const json = await res.json().catch(() => null);
-    if (!json?.user?.token) throw new Error(json?.message || 'PIN incorrecto');
-    await setToken(json.user.token);
-    return json.user;
-}
+export const loginPin = (email, pin) => authenticate('/auth/login-pin', { email, pin }, 'PIN incorrecto');
 
 export const setPinRemote = (pin) => req('/auth/set-pin', { method: 'POST', body: JSON.stringify({ pin }) });
 
@@ -103,9 +97,7 @@ export const startBreak = () => req('/shifts/employee/breaks/start', { method: '
 export const endBreak = () => req('/shifts/employee/breaks/end', { method: 'POST', body: '{}' });
 
 export const registerDevice = (payload) => req('/devices/employee/register', { method: 'POST', body: JSON.stringify(payload) });
-export const updatePushToken = (device_uuid, push_token) => req('/devices/employee/push-token', { method: 'PATCH', body: JSON.stringify({ device_uuid, push_token }) });
 
-export const listMyRequests = () => req('/correction-requests/employee');
 export const createCorrectionRequest = (payload) => req('/correction-requests/employee', { method: 'POST', body: JSON.stringify(payload) });
 
 export const listNotifications = () => req('/notifications/employee');

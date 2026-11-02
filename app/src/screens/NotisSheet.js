@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
 import { Bell, AlertCircle, Clock } from 'lucide-react-native';
-import { C, R } from '../theme';
+import { C } from '../theme';
 import { fmtTimeFromISO } from '../helpers';
 
 const META = {

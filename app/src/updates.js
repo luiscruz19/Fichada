@@ -56,7 +56,7 @@ export async function buscarActualizacion({ silencioso = false, hayJornadaAbiert
                 { text: 'Reiniciar', onPress: () => { void Updates.reloadAsync(); } },
             ],
         );
-    } catch (e) {
+    } catch {
         if (!silencioso) Alert.alert('Fichada', 'No se pudo buscar la actualización. Probá de nuevo con conexión.');
     } finally {
         buscando = false;

@@ -50,7 +50,7 @@ export async function syncDevice() {
             model: ExpoDevice.modelName || null,
             push_token,
         });
-    } catch (e) {
+    } catch {
         // Rechazado u offline: el fichaje sigue funcionando.
     }
 }

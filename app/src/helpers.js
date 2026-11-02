@@ -29,6 +29,8 @@ export const cap = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : s);
 
 // UTC−3 fijo. getHours() y getDate() dan la zona del teléfono: uno mal configurado corre el día.
 const AR_OFFSET_MS = 3 * 60 * 60 * 1000;
+const MS_POR_MINUTO = 60 * 1000;
+export const MINUTOS_POR_DIA = 24 * 60;
 
 export function partesAr(iso) {
     const d = new Date(new Date(iso).getTime() - AR_OFFSET_MS);
@@ -43,7 +45,7 @@ export function partesAr(iso) {
 export function isoDesdeMinutosAr(isoBase, minutos, diaSiguiente = false) {
     const p = partesAr(isoBase);
     const medianocheArEnUtc = Date.UTC(p.y, p.mes - 1, p.dia) + AR_OFFSET_MS;
-    const ms = medianocheArEnUtc + (minutos + (diaSiguiente ? 1440 : 0)) * 60000;
+    const ms = medianocheArEnUtc + (minutos + (diaSiguiente ? MINUTOS_POR_DIA : 0)) * MS_POR_MINUTO;
     return new Date(ms).toISOString();
 }
 
