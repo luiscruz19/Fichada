@@ -121,7 +121,7 @@ cd api && npm install && npm test
 cd backoffice && node --test 'tests/*.test.ts'
 ```
 
-Cubren la revocación de sesiones, los permisos, las horas trabajadas, las contraseñas temporales y la puntualidad. El pipeline de GitHub Actions los corre en cada push a `main`. No hay tests de la app ni de punta a punta.
+Cubren la revocación de sesiones, los permisos, las horas trabajadas, las contraseñas temporales y la puntualidad. No hay tests de la app ni de punta a punta.
 
 ## Limitaciones conocidas
 
