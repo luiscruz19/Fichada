@@ -38,5 +38,10 @@ export const validate = (validations) => {
     };
 };
 
-export const isEmpty = (value) =>
-    (value === null || value === undefined || value === '');
+export const pickDefined = (source, fields) => {
+    const picked = {};
+    for (const field of fields) {
+        if (source[field] !== undefined) picked[field] = source[field];
+    }
+    return picked;
+};

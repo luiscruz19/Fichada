@@ -1,9 +1,9 @@
-import { Op } from 'sequelize';
 import Shift from '../../models/Shift.js';
 import Break from '../../models/Break.js';
 import Employee from '../../models/Employee.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 import buildReportRows from '../../services/shift/build-report-rows.js';
+import checkInRange from '../../services/shift/check-in-range.js';
 import { toCsv, toXlsx, toPdf } from '../../services/shift/exporters.js';
 
 const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email', 'expected_check_in', 'target_hours'];
@@ -11,15 +11,10 @@ const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email', 'expected_chec
 export async function listShifts(req, res) {
     try {
         const { employee_id, status, from, to } = req.query;
-        const where = {};
+        const where = { ...checkInRange(from, to) };
 
         if (employee_id) where.employee_id = employee_id;
         if (status) where.status = status;
-        if (from || to) {
-            where.check_in = {};
-            if (from) where.check_in[Op.gte] = new Date(from);
-            if (to) where.check_in[Op.lte] = new Date(to);
-        }
 
         const shifts = await Shift.findAll({
             where,

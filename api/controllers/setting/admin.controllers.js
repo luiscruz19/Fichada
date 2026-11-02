@@ -1,5 +1,14 @@
 import Setting from '../../models/Setting.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
+import { pickDefined } from '../../utils/helpers.js';
+
+const UPDATABLE_FIELDS = [
+    'default_target_hours', 'default_expected_check_in', 'work_days',
+    'late_tolerance_minutes', 'timezone', 'rounding_minutes',
+    'location_required', 'allow_breaks', 'allow_correction_requests',
+    'reminders_enabled', 'reminder_checkin_start', 'reminder_checkin_end',
+    'reminder_checkout_start', 'reminder_checkout_end',
+];
 
 async function getOrCreateSettings() {
     let settings = await Setting.findOne({ order: [['id', 'ASC']] });
@@ -21,20 +30,7 @@ export async function getSettings(req, res) {
 export async function updateSettings(req, res) {
     try {
         const settings = await getOrCreateSettings();
-
-        const fields = [
-            'default_target_hours', 'default_expected_check_in', 'work_days',
-            'late_tolerance_minutes', 'timezone', 'rounding_minutes',
-            'location_required', 'allow_breaks', 'allow_correction_requests',
-            'reminders_enabled', 'reminder_checkin_start', 'reminder_checkin_end',
-            'reminder_checkout_start', 'reminder_checkout_end',
-        ];
-        const updates = {};
-        for (const f of fields) {
-            if (req.body[f] !== undefined) updates[f] = req.body[f];
-        }
-
-        await settings.update(updates);
+        await settings.update(pickDefined(req.body, UPDATABLE_FIELDS));
         return res.status(200).json(successMessage({ message: 'Ajustes actualizados', extra: { data: settings } }));
     } catch (error) {
         return res.status(500).json(errorMessage({

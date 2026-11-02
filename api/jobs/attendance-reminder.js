@@ -17,12 +17,13 @@ const CHECKOUT_END = Number(process.env.CHECKOUT_REMINDER_END ?? 20);
 
 // Menor que el intervalo del cron (30 min): no duplica el aviso si el job corre dos veces.
 const DEDUPE_MINUTES = 25;
+const MS_PER_HOUR = 60 * 60 * 1000;
 
 const DOW = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
 const DEFAULT_WORK_DAYS = ['mon', 'tue', 'wed', 'thu', 'fri'];
 
 function localParts() {
-    const shifted = new Date(Date.now() + OFFSET_H * 3600 * 1000);
+    const shifted = new Date(Date.now() + OFFSET_H * MS_PER_HOUR);
     return {
         y: shifted.getUTCFullYear(),
         m: shifted.getUTCMonth(),
@@ -33,9 +34,9 @@ function localParts() {
     };
 }
 
-function todayRangeUtc(p) {
-    const startMs = Date.UTC(p.y, p.m, p.d, 0, 0, 0) - OFFSET_H * 3600 * 1000;
-    return { start: new Date(startMs), end: new Date(startMs + 24 * 3600 * 1000) };
+function todayRangeUtc(local) {
+    const startMs = Date.UTC(local.y, local.m, local.d, 0, 0, 0) - OFFSET_H * MS_PER_HOUR;
+    return { start: new Date(startMs), end: new Date(startMs + 24 * MS_PER_HOUR) };
 }
 
 function isWorkDay(workDays, dow) {
@@ -64,57 +65,55 @@ async function notify(employeeId, type, title, body, extra = {}) {
 
 // Solo en días laborales. El aviso se repite en cada corrida hasta que el empleado ficha.
 export async function runAttendanceReminder() {
-    const p = localParts();
+    const local = localParts();
     const setting = await Setting.findOne();
 
     if (setting && setting.reminders_enabled === false) return 0;
-    const ciStart = setting?.reminder_checkin_start ?? CHECKIN_START;
-    const ciEnd = setting?.reminder_checkin_end ?? CHECKIN_END;
-    const coStart = setting?.reminder_checkout_start ?? CHECKOUT_START;
-    const coEnd = setting?.reminder_checkout_end ?? CHECKOUT_END;
+    const checkinStart = setting?.reminder_checkin_start ?? CHECKIN_START;
+    const checkinEnd = setting?.reminder_checkin_end ?? CHECKIN_END;
+    const checkoutStart = setting?.reminder_checkout_start ?? CHECKOUT_START;
+    const checkoutEnd = setting?.reminder_checkout_end ?? CHECKOUT_END;
 
-    const inCheckin = p.hour >= ciStart && p.hour < ciEnd;
-    const inCheckout = p.hour >= coStart && p.hour < coEnd;
+    const inCheckin = local.hour >= checkinStart && local.hour < checkinEnd;
+    const inCheckout = local.hour >= checkoutStart && local.hour < checkoutEnd;
     if (!inCheckin && !inCheckout) return 0;
 
-    const { start, end } = todayRangeUtc(p);
+    const { start, end } = todayRangeUtc(local);
 
     const employees = await Employee.findAll({ where: { status: 'active', role: 'employee' } });
     let notified = 0;
 
-    for (const emp of employees) {
-        const workDays = emp.work_days || setting?.work_days || null;
-        if (!isWorkDay(workDays, p.dow)) continue;
+    for (const employee of employees) {
+        const workDays = employee.work_days || setting?.work_days || null;
+        if (!isWorkDay(workDays, local.dow)) continue;
 
         const todayShifts = await Shift.findAll({
-            where: { employee_id: emp.id, check_in: { [Op.gte]: start, [Op.lt]: end } },
+            where: { employee_id: employee.id, check_in: { [Op.gte]: start, [Op.lt]: end } },
         });
 
         if (inCheckin) {
-            const hasCheckin = todayShifts.length > 0;
-            if (!hasCheckin) {
-                const sent = await notify(
-                    emp.id, 'check_in_reminder',
-                    'Recordá fichar tu entrada',
-                    'Todavía no registraste tu ingreso de hoy.',
-                );
-                if (sent) notified++;
-            }
-        } else if (inCheckout) {
-            const openShift = todayShifts.find((s) => s.status === 'open' && !s.check_out);
-            if (openShift) {
-                const sent = await notify(
-                    emp.id, 'check_out_reminder',
-                    'Recordá fichar tu salida',
-                    'Tu jornada sigue abierta. No te olvides de registrar la salida.',
-                    { shift_id: openShift.id },
-                );
-                if (sent) notified++;
-            }
+            if (todayShifts.length > 0) continue;
+            const sent = await notify(
+                employee.id, 'check_in_reminder',
+                'Recordá fichar tu entrada',
+                'Todavía no registraste tu ingreso de hoy.',
+            );
+            if (sent) notified++;
+            continue;
         }
+
+        const openShift = todayShifts.find((s) => s.status === 'open' && !s.check_out);
+        if (!openShift) continue;
+        const sent = await notify(
+            employee.id, 'check_out_reminder',
+            'Recordá fichar tu salida',
+            'Tu jornada sigue abierta. No te olvides de registrar la salida.',
+            { shift_id: openShift.id },
+        );
+        if (sent) notified++;
     }
 
-    if (notified > 0) console.info(`[attendance-reminder] ${notified} aviso(s) enviados (${p.hour}:${String(p.min).padStart(2, '0')} local)`);
+    if (notified > 0) console.info(`[attendance-reminder] ${notified} aviso(s) enviados (${local.hour}:${String(local.min).padStart(2, '0')} local)`);
     return notified;
 }
 

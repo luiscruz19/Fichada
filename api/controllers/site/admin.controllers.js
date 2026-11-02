@@ -1,5 +1,8 @@
 import Site from '../../models/Site.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
+import { pickDefined } from '../../utils/helpers.js';
+
+const UPDATABLE_FIELDS = ['name', 'address', 'lat', 'lng', 'radius_meters', 'status'];
 
 export async function listSites(req, res) {
     try {
@@ -52,16 +55,7 @@ export async function updateSite(req, res) {
         const site = await Site.findByPk(req.params.id);
         if (!site) return res.status(404).json(errorMessage({ message: 'Sede no encontrada' }));
 
-        const { name, address, lat, lng, radius_meters, status } = req.body;
-        const updates = {};
-        if (name !== undefined) updates.name = name;
-        if (address !== undefined) updates.address = address;
-        if (lat !== undefined) updates.lat = lat;
-        if (lng !== undefined) updates.lng = lng;
-        if (radius_meters !== undefined) updates.radius_meters = radius_meters;
-        if (status !== undefined) updates.status = status;
-
-        await site.update(updates);
+        await site.update(pickDefined(req.body, UPDATABLE_FIELDS));
         return res.status(200).json(successMessage({ message: 'Sede actualizada', extra: { data: site } }));
     } catch (error) {
         return res.status(500).json(errorMessage({
