@@ -26,6 +26,7 @@ Sistema de control de asistencia. El empleado ficha entrada, salida y pausas des
 - La hora de cada marca la pone el servidor, no el teléfono. Todo el sistema opera en hora de Argentina (UTC−3 fijo).
 - Un empleado tiene una sola jornada abierta, y no puede cerrarla con una pausa en curso.
 - El administrador no edita jornadas de oficio: todo cambio nace de una solicitud del empleado y queda en la auditoría con el valor anterior y el nuevo. Puede aprobar con una hora distinta a la pedida.
+- Revocar un dispositivo o la sesión de un empleado invalida sus JWT anteriores en el siguiente pedido, y tiene que volver a iniciar sesión.
 - Una cuenta tiene un dispositivo activo. Un teléfono nuevo reemplaza al anterior después de un login válido; un dispositivo vinculado a otra cuenta recibe 409.
 - Cinco intentos fallidos de PIN bloquean el ingreso por PIN durante 5 minutos.
 - Un job corre cada 30 minutos y avisa en días laborales: entrada si no fichó (9 a 13 h por defecto), salida si la jornada sigue abierta (18 a 20 h por defecto). Las franjas se configuran en Ajustes.
@@ -113,12 +114,18 @@ Cada servicio tiene su `.env.example`.
 
 El `docker-compose.yml` de desarrollo no le pasa `GOOGLE_MAPS_API_KEY` al panel: sin esa key, el mapa no carga.
 
+## Tests
+
+```bash
+cd api && npm install && npm test
+cd backoffice && node --test 'tests/*.test.ts'
+```
+
+Cubren la revocación de sesiones, los permisos, las horas trabajadas, las contraseñas temporales y la puntualidad. El pipeline de GitHub Actions los corre en cada push a `main`. No hay tests de la app ni de punta a punta.
+
 ## Limitaciones conocidas
 
-- No tiene tests automatizados ni linter.
-- Revocar un dispositivo solo cambia su estado: el api no lo controla en cada pedido, así que el JWT sigue valiendo hasta vencer (8 horas por defecto, `SESSION_TIMEOUT`).
-- Estos ajustes se guardan pero ningún flujo los aplica: ubicación obligatoria (siempre lo es), redondeo, tolerancia de tardanza, zona horaria, jornada y entrada por defecto.
-- La tolerancia de puntualidad de los reportes está fija en 5 minutos.
+- Ubicación obligatoria y hora de Argentina son reglas fijas del sistema: no se configuran.
 - El registro de auditoría se consulta solo por API; el panel no tiene pantalla para verlo.
 
 ## Firebase
