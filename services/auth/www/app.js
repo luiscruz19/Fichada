@@ -10,7 +10,7 @@ import logger from '../utils/logger.js';
 
 const app = express();
 
-// Required for accurate req.ip behind Docker/nginx/load-balancers
+// Detrás de Traefik, req.ip sería la IP del proxy.
 app.set('trust proxy', 1);
 
 app.use(requestId);
@@ -37,7 +37,7 @@ if (process.env.NODE_ENV !== 'production') {
 
 app.use('/', routes);
 
-// Global error handler — prevents stack traces from leaking to the client
+// Evita que el stack trace llegue al cliente.
 app.use((err, req, res, _next) => {
     logger.error('unhandled_error', { requestId: req.id, path: req.path, method: req.method, status: err.status || 500, message: err.message });
     res.status(err.status || 500).json({ status: 0, message: 'Error interno del servidor' });

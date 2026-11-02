@@ -27,7 +27,6 @@ app.get('/health', async (_req, res) => {
     await transporter.verify();
     res.json({ status: 'ok', service: 'mailer', uptime: process.uptime() });
   } catch {
-    // SMTP no disponible — servicio degradado (no caído)
     res.status(503).json({ status: 'degraded', service: 'mailer', message: 'SMTP connection failed' });
   }
 });

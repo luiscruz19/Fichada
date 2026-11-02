@@ -19,10 +19,9 @@ export default (req, res, next) => {
     }
 
     try {
-        // jwt.verify() validates signature, algorithm and exp automatically
         const payload = jwt.verify(token, SECRET_KEY, { algorithms: ['HS256'] });
 
-        // Extra expiration guard against tokens that set exp to 0 or NaN
+        // jwt.verify acepta exp en 0 o NaN: esos tokens se rechazan acá.
         const now = Math.floor(Date.now() / 1000);
         const expiresAt = Number(payload.exp ?? payload.expire ?? payload.expiration ?? 0);
         if (!expiresAt || Number.isNaN(expiresAt) || expiresAt <= now) {

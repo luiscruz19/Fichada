@@ -10,9 +10,8 @@ process.on('unhandledRejection', (reason) => {
     process.exit(1);
 });
 
-// DB init (ensureDatabase + migrations) then start HTTP server
 initConnection().then(() => {
-    // Import app after DB is ready to avoid sequelize.sync race
+    // La app se importa con la base lista para evitar la carrera con sequelize.sync.
     import('./www/app.js').then(({ default: app }) => {
         const server = app.listen(PORT, () => {
             logger.info('');

@@ -1,9 +1,4 @@
-/**
- * Manual migration runner.
- * Usage:
- *   node db/migrations/runner.js           # run pending
- *   node db/migrations/runner.js --status  # show status
- */
+// Uso: node db/migrations/runner.js [--status]
 import { Sequelize } from 'sequelize';
 import sequelize from '../sequelize.js';
 import fs from 'fs';
