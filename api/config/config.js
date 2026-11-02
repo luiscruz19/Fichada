@@ -2,6 +2,15 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
+const SECRET_VARIABLES = ['SECRET_KEY', 'AUTH_BASIC_PW', 'MAILER_BASIC_PW'];
+
+if (process.env.NODE_ENV === 'production') {
+    const missing = SECRET_VARIABLES.filter((name) => !process.env[name]);
+    if (missing.length > 0) {
+        throw new Error(`Faltan variables obligatorias: ${missing.join(', ')}`);
+    }
+}
+
 const CONFIG = {
     DATABASE: {
         HOST: process.env.DB_HOST || 'localhost',

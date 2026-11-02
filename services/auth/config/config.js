@@ -3,7 +3,7 @@ import 'dotenv/config';
 const isProduction = process.env.NODE_ENV === 'production';
 
 if (isProduction) {
-    const required = ['SECRET_KEY', 'DB_HOST_AUTH', 'DB_USER_AUTH', 'DB_ROOT_PASSWORD_AUTH', 'DB_NAME_AUTH'];
+    const required = ['SECRET_KEY', 'AUTH_BASIC_PW', 'DB_HOST_AUTH', 'DB_USER_AUTH', 'DB_ROOT_PASSWORD_AUTH', 'DB_NAME_AUTH'];
     for (const key of required) {
         if (!process.env[key]) {
             console.error(`[config] Missing required env var in production: ${key}`);
