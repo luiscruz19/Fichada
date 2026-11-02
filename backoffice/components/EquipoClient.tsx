@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ic } from './icons';
 import { ChipTone, Avatar, initials } from './ui';
-import { px } from '@/lib/client';
+import { proxyFetch } from '@/lib/client';
 import type { Employee } from '@/lib/types';
 
 type Draft = Partial<Employee> & { id?: number };
@@ -24,7 +24,7 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
         if (!confirm(`Regenerar acceso de ${e.first_name} ${e.last_name}?\n\nSe genera una nueva contraseña temporal y se borra su PIN actual.`)) return;
         setBusy(true);
         try {
-            const r = await px(`/employees/admin/${e.id}/reset-access`, { method: 'POST', body: '{}' });
+            const r = await proxyFetch(`/employees/admin/${e.id}/reset-access`, { method: 'POST', body: '{}' });
             if (r.ok && r.json?.temp_password) setRegen({ email: e.email, temp: r.json.temp_password });
             else alert(r.json?.message || 'No se pudo regenerar el acceso');
         } finally { setBusy(false); }
@@ -66,21 +66,21 @@ export function EquipoClient({ employees }: { employees: Employee[] }) {
                                             <div style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
                                                 <button title="Editar" onClick={() => setEditing(e)} style={iconBtn}>{Ic.edit({ size: 16 })}</button>
                                                 <button title="Resetear PIN" disabled={busy}
-                                                    onClick={() => action(() => px(`/employees/admin/${e.id}/reset-pin`, { method: 'POST', body: '{}' }))}
+                                                    onClick={() => action(() => proxyFetch(`/employees/admin/${e.id}/reset-pin`, { method: 'POST', body: '{}' }))}
                                                     style={iconBtn}>{Ic.lock({ size: 16 })}</button>
                                                 <button title="Regenerar acceso (nueva contraseña temporal)" disabled={busy}
                                                     onClick={() => regenerate(e)}
                                                     style={iconBtn}>{Ic.key({ size: 16 })}</button>
                                                 <button title="Revocar sesión (kill switch)" disabled={busy}
-                                                    onClick={() => action(() => px(`/employees/admin/${e.id}/kill-switch`, { method: 'POST', body: '{}' }))}
+                                                    onClick={() => action(() => proxyFetch(`/employees/admin/${e.id}/kill-switch`, { method: 'POST', body: '{}' }))}
                                                     style={{ ...iconBtn, color: 'var(--warn)' }}>{Ic.power({ size: 16 })}</button>
                                                 {inactive ? (
                                                     <button title="Reactivar" disabled={busy}
-                                                        onClick={() => action(() => px(`/employees/admin/${e.id}/reactivate`, { method: 'PATCH', body: '{}' }))}
+                                                        onClick={() => action(() => proxyFetch(`/employees/admin/${e.id}/reactivate`, { method: 'PATCH', body: '{}' }))}
                                                         style={{ ...iconBtn, color: 'var(--ok)' }}>{Ic.refresh({ size: 16 })}</button>
                                                 ) : (
                                                     <button title="Dar de baja" disabled={busy}
-                                                        onClick={() => action(() => px(`/employees/admin/${e.id}/deactivate`, { method: 'PATCH', body: '{}' }))}
+                                                        onClick={() => action(() => proxyFetch(`/employees/admin/${e.id}/deactivate`, { method: 'PATCH', body: '{}' }))}
                                                         style={{ ...iconBtn, color: 'var(--danger)' }}>{Ic.trash({ size: 16 })}</button>
                                                 )}
                                             </div>
@@ -166,8 +166,8 @@ function EmployeeDrawer({ draft, onClose, onSaved }: { draft: Draft; onClose: ()
         if (form.expected_check_in) body.expected_check_in = form.expected_check_in;
 
         const r = isNew
-            ? await px('/employees/admin', { method: 'POST', body: JSON.stringify(body) })
-            : await px(`/employees/admin/${draft.id}`, { method: 'PUT', body: JSON.stringify(body) });
+            ? await proxyFetch('/employees/admin', { method: 'POST', body: JSON.stringify(body) })
+            : await proxyFetch(`/employees/admin/${draft.id}`, { method: 'PUT', body: JSON.stringify(body) });
 
         setBusy(false);
         if (!r.ok) { setError(r.json?.message || 'No se pudo guardar'); return; }

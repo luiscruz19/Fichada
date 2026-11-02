@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Ic } from './icons';
-import { px } from '@/lib/client';
+import { proxyFetch } from '@/lib/client';
 import type { Setting, Site } from '@/lib/types';
 
 export function AjustesClient({ settings, sites }: { settings: Setting | null; sites: Site[] }) {
@@ -31,7 +31,7 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
             reminder_checkout_start: Number(s.reminder_checkout_start ?? 18),
             reminder_checkout_end: Number(s.reminder_checkout_end ?? 20),
         };
-        const r = await px('/settings/admin', { method: 'PUT', body: JSON.stringify(body) });
+        const r = await proxyFetch('/settings/admin', { method: 'PUT', body: JSON.stringify(body) });
         setBusy(false);
         if (r.ok) { setSaved(true); router.refresh(); }
     }
@@ -97,12 +97,12 @@ function SitesCard({ sites, onChange }: { sites: Site[]; onChange: () => void })
     async function add() {
         if (!name.trim()) return;
         setBusy(true);
-        await px('/sites/admin', { method: 'POST', body: JSON.stringify({ name, address: address || null }) });
+        await proxyFetch('/sites/admin', { method: 'POST', body: JSON.stringify({ name, address: address || null }) });
         setBusy(false); setName(''); setAddress(''); onChange();
     }
     async function del(id: number) {
         setBusy(true);
-        await px(`/sites/admin/${id}`, { method: 'DELETE' });
+        await proxyFetch(`/sites/admin/${id}`, { method: 'DELETE' });
         setBusy(false); onChange();
     }
 

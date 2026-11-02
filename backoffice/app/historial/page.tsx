@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { HistorialClient } from '@/components/HistorialClient';
-import { fmtTime, fmtDateShort, secondsToHHMM, initials } from '@/lib/format';
+import { fmtTime, fmtDateShort, secondsToHHMM, initials, sumBreakSeconds } from '@/lib/format';
 import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
 import { BASE_PATH } from '@/lib/config';
 import type { Shift, CorrectionRequest, Row } from '@/lib/types';
@@ -25,7 +25,7 @@ export default async function HistorialPage({ searchParams }: { searchParams: { 
 
     const rows: Row[] = shifts.map((s) => {
         const emp = s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : `#${s.employee_id}`;
-        const pausasSec = (s.breaks || []).reduce((a, b) => a + (b.duration_seconds || 0), 0);
+        const pausasSec = sumBreakSeconds(s.breaks);
         return {
             shift: s,
             emp,
