@@ -1,3 +1,4 @@
+import './db/connection.js';
 import app from './www/app.js';
 import CONFIG from './config/config.js';
 import logger from './utils/logger.js';
