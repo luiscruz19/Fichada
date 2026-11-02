@@ -22,13 +22,9 @@ export type Device = {
 
 export type Setting = {
     id: number;
-    default_target_hours: number | null;
     default_expected_check_in: string | null;
     work_days: string[] | null;
     late_tolerance_minutes: number;
-    timezone: string;
-    rounding_minutes: number;
-    location_required: boolean;
     allow_breaks: boolean;
     allow_correction_requests: boolean;
     reminders_enabled: boolean;

@@ -1,6 +1,7 @@
 import type { Shift } from './types';
 import { addDaysKey, daysBetween, fmtKeyShort, todayKeyAR } from './daterange';
 import { TZ } from './format';
+import { expectedCheckInMin, isPunctual, type PunctualityRules } from './punctuality';
 
 const MAX_CHART_DAYS = 62;
 const DEFAULT_CHART_DAYS = 14;
@@ -51,13 +52,6 @@ export function todayKey(): string {
     return localParts(new Date().toISOString()).dateKey;
 }
 
-function hhmmToMin(s?: string | null): number | null {
-    if (!s) return null;
-    const m = /^(\d{1,2}):(\d{2})/.exec(s);
-    if (!m) return null;
-    return Number(m[1]) * 60 + Number(m[2]);
-}
-
 export type PersonMetric = {
     id: number;
     name: string;
@@ -86,10 +80,7 @@ export type Metrics = {
     daily: { key: string; label: string; seconds: number }[];
 };
 
-// Este server component no recibe late_tolerance_minutes de Ajustes.
-const PUNCTUAL_TOLERANCE_MIN = 5;
-
-export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
+export function computeMetrics(shifts: Shift[], range?: Range, rules: PunctualityRules = {}): Metrics {
     const tk = todayKey();
 
     const weekKeys = new Set<string>();
@@ -128,11 +119,11 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
             allCheckout.push(co.h * 60 + co.m);
         }
 
-        const expected = hhmmToMin(s.employee?.expected_check_in);
+        const expected = expectedCheckInMin(s.employee?.expected_check_in, rules);
         let personPunctOk = 0, personPunctTotal = 0;
         if (expected != null) {
             punctTotal++; personPunctTotal = 1;
-            if (ciMin <= expected + PUNCTUAL_TOLERANCE_MIN) { punctOk++; personPunctOk = 1; }
+            if (isPunctual(ciMin, expected, rules)) { punctOk++; personPunctOk = 1; }
         }
 
         const name = s.employee ? `${s.employee.first_name} ${s.employee.last_name}` : `#${s.employee_id}`;

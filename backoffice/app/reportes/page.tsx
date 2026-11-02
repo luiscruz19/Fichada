@@ -9,7 +9,7 @@ import { secondsToHHMM } from '@/lib/format';
 import { computeMetrics, minToHHMM } from '@/lib/metrics';
 import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
 import { BASE_PATH } from '@/lib/config';
-import type { Shift } from '@/lib/types';
+import type { Setting, Shift } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,7 +19,11 @@ export default async function ReportesPage({ searchParams }: { searchParams: { f
     const apiQ = rangeToApiQuery(range.fromKey, range.toKey);
     const res = await apiGetJson<{ data: Shift[] }>(`/shifts/admin${apiQ ? `?${apiQ}` : ''}`);
     const shifts = res?.data || [];
-    const m = computeMetrics(shifts, range);
+    const settingsJson = await apiGetJson<{ data: Setting }>('/settings/admin');
+    const m = computeMetrics(shifts, range, {
+        toleranceMinutes: settingsJson?.data?.late_tolerance_minutes,
+        defaultExpectedCheckIn: settingsJson?.data?.default_expected_check_in,
+    });
     const hasRange = !!(range.fromKey || range.toKey);
     const exportQ = apiQ;
 
