@@ -1,10 +1,7 @@
 import { DataTypes } from 'sequelize';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Ajustes globales del sistema. Fila única (single-row): se lee/edita el primer registro.
- * Sin horas extra en el MVP (queda fuera de alcance).
- */
+// Fila única: se lee y se edita el primer registro.
 const Setting = sequelize.define('settings', {
     id: {
         type: DataTypes.INTEGER,

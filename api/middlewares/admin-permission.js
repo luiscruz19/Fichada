@@ -2,11 +2,6 @@ import Employee from '../models/Employee.js';
 import messages from '../config/messages.js';
 import { errorMessage } from '../utils/messages.js';
 
-/**
- * Exige que el usuario del token corresponda a un Employee activo con rol admin.
- * Resuelve contra la tabla local (no hay request inter-servicio en el monolito).
- * Deja el registro en req.employee.
- */
 export default async (req, res, next) => {
     try {
         const employee = await Employee.findOne({

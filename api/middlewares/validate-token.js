@@ -6,11 +6,7 @@ import { errorMessage } from '../utils/messages.js';
 const { SECRET_KEY } = CONFIG;
 const { generic } = messages;
 
-/**
- * Valida el JWT localmente con la SECRET_KEY compartida con el servicio auth (HS256).
- * No hace request al auth en cada llamada: en un monolito alcanza con verificar la firma.
- * Deja en req.user el payload emitido por auth (incluye id = user_id).
- */
+// Verifica la firma con la SECRET_KEY compartida, sin consultar a auth en cada pedido.
 export default (req, res, next) => {
     const headerToken = req.headers.token;
     const authHeader = req.headers.authorization;

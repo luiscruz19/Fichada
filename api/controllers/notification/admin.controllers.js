@@ -4,7 +4,6 @@ import { successMessage, errorMessage } from '../../utils/messages.js';
 
 const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email'];
 
-// ==================== LISTAR NOTIFICACIONES ====================
 export async function listNotifications(req, res) {
     try {
         const { employee_id, type, status } = req.query;

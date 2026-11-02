@@ -29,7 +29,7 @@ const sequelize = new Sequelize(NAME, USER, PASSWORD, {
         ]
     },
     logging: process.env.NODE_ENV === 'development' ? console.log : false,
-    // La hora oficial la pone el servidor; toda la app opera en zona Argentina (UTC−3).
+    // Toda la app opera en hora de Argentina.
     timezone: '-03:00',
     dialectOptions: {
         connectTimeout: 60000

@@ -2,11 +2,6 @@ import Employee from '../models/Employee.js';
 import messages from '../config/messages.js';
 import { errorMessage } from '../utils/messages.js';
 
-/**
- * Exige que el usuario del token corresponda a un Employee activo (cualquier rol).
- * Es la puerta de las rutas del empleado (fichaje, historial propio).
- * Deja el registro en req.employee.
- */
 export default async (req, res, next) => {
     try {
         const employee = await Employee.findOne({

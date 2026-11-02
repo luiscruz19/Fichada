@@ -7,12 +7,10 @@ import { successMessage, errorMessage } from '../../utils/messages.js';
 import getOpenShift from '../../services/shift/get-open-shift.js';
 import computeWorkedSeconds from '../../services/shift/compute-worked-seconds.js';
 
-// Ajustes globales (fila única). Devuelve null si todavía no se configuró.
 async function getSettings(options = {}) {
     return Setting.findOne({ order: [['id', 'ASC']], ...options });
 }
 
-// ==================== ESTADO ACTUAL ====================
 export async function currentStatus(req, res) {
     try {
         const open = await getOpenShift(req.employee.id, {
@@ -37,11 +35,9 @@ export async function currentStatus(req, res) {
     }
 }
 
-// ==================== FICHAR ENTRADA ====================
 export async function clockIn(req, res) {
     const transaction = await sequelize.transaction();
     try {
-        // No se puede abrir una jornada nueva si ya hay otra abierta.
         const open = await getOpenShift(req.employee.id, { transaction });
         if (open) {
             await transaction.rollback();
@@ -54,7 +50,8 @@ export async function clockIn(req, res) {
 
         const shift = await Shift.create({
             employee_id: req.employee.id,
-            check_in: new Date(),            // hora oficial del servidor
+            // La hora la pone el servidor, nunca el teléfono.
+            check_in: new Date(),
             check_in_lat: lat,
             check_in_lng: lng,
             check_in_accuracy: accuracy ?? null,
@@ -76,7 +73,6 @@ export async function clockIn(req, res) {
     }
 }
 
-// ==================== FICHAR SALIDA ====================
 export async function clockOut(req, res) {
     const transaction = await sequelize.transaction();
     try {
@@ -126,7 +122,6 @@ export async function clockOut(req, res) {
     }
 }
 
-// ==================== SALIR A PAUSA ====================
 export async function startBreak(req, res) {
     const transaction = await sequelize.transaction();
     try {
@@ -176,7 +171,6 @@ export async function startBreak(req, res) {
     }
 }
 
-// ==================== VOLVER DE PAUSA ====================
 export async function endBreak(req, res) {
     const transaction = await sequelize.transaction();
     try {
@@ -218,7 +212,6 @@ export async function endBreak(req, res) {
     }
 }
 
-// ==================== MI HISTORIAL (solo lectura) ====================
 export async function myHistory(req, res) {
     try {
         const { from, to } = req.query;

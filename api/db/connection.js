@@ -1,12 +1,7 @@
 import sequelize from './sequelize.js';
-// Importa todos los modelos y registra sus asociaciones en la instancia.
 import '../models/index.js';
 
-/**
- * Conecta y sincroniza el esquema al arrancar.
- *  - desarrollo: alter:true (ajusta tablas existentes a los modelos).
- *  - producción: alter:false (solo crea tablas nuevas, no modifica las existentes).
- */
+// En producción sync solo crea tablas nuevas: alter modificaría las existentes.
 (async () => {
     try {
         await sequelize.authenticate();

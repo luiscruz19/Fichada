@@ -3,19 +3,9 @@ import Break from '../../models/Break.js';
 import recordAudit from '../audit-log/record-audit.js';
 import computeWorkedSeconds from '../shift/compute-worked-seconds.js';
 
-/**
- * Aplica una solicitud de corrección aprobada, dentro de la transacción dada.
- *  - type 'edit': ajusta la entrada/salida de una jornada existente.
- *  - type 'add':  crea una jornada faltante (origin 'correction', sin ubicación).
- * Deja registro en la auditoría con el valor anterior y el nuevo.
- *
- * `ajustes` permite que el admin apruebe con una hora distinta a la que pidió el empleado:
- * la solicitud original NO se pisa (queda como registro de lo que se pidió) y la auditoría
- * guarda el valor que efectivamente se aplicó.
- */
+// Si el admin ajusta la hora, la solicitud no se pisa: la auditoría guarda lo que se aplicó.
 export default async function applyCorrection(request, adminId, transaction, ajustes = {}) {
-    // Motivo del empleado; si no escribió ninguno (ahora es opcional), dejamos rastro igual:
-    // la auditoría no puede quedar sin el porqué de un cambio de horas.
+    // El motivo es opcional, pero la auditoría no puede quedar sin el porqué de un cambio de horas.
     const motivo = (request.reason && request.reason.trim())
         || `Corrección aprobada sin motivo (solicitud #${request.id})`;
 
@@ -48,7 +38,6 @@ export default async function applyCorrection(request, adminId, transaction, aju
         return shift;
     }
 
-    // type 'edit'
     const shift = await Shift.findByPk(request.shift_id, { transaction });
     if (!shift) {
         throw new Error('La jornada a corregir no existe');
@@ -65,8 +54,7 @@ export default async function applyCorrection(request, adminId, transaction, aju
     const newCheckIn = updates.check_in ?? shift.check_in;
     const newCheckOut = updates.check_out ?? shift.check_out;
     if (newCheckOut) {
-        // Las pausas de la jornada se descuentan igual que al fichar la salida: sin esto,
-        // aprobar una corrección sobre una jornada con pausas infla las horas trabajadas.
+        // Sin descontar las pausas, aprobar la corrección inflaría las horas trabajadas.
         const breaks = await Break.findAll({ where: { shift_id: shift.id }, transaction });
         updates.worked_seconds = computeWorkedSeconds(newCheckIn, newCheckOut, breaks);
         updates.status = 'closed';

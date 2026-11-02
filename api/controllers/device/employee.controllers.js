@@ -1,19 +1,12 @@
 import Device from '../../models/Device.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
-// ==================== REGISTRAR / ACTIVAR DISPOSITIVO ====================
-// Binding de "un dispositivo activo por cuenta", con RE-VINCULACIÓN AUTOMÁTICA:
-// este endpoint solo se alcanza con un JWT válido (login con email + PIN correcto),
-// así que la identidad ya está probada. Si el empleado entra desde un teléfono nuevo
-// (p.ej. reinstaló la app → uuid nuevo), se revoca el dispositivo anterior y se activa
-// el nuevo automáticamente, sin necesidad de que el admin intervenga. El único caso
-// que sigue bloqueado es un uuid ya vinculado a OTRA cuenta.
+// El JWT ya probó la identidad: un teléfono nuevo reemplaza al anterior sin pasar por el admin.
 export async function registerDevice(req, res) {
     try {
         const { device_uuid, platform, model, push_token } = req.body;
         const employeeId = req.employee.id;
 
-        // ¿Ya existe este mismo dispositivo?
         const existing = await Device.findOne({ where: { device_uuid } });
         if (existing) {
             if (existing.employee_id !== employeeId) {
@@ -21,7 +14,6 @@ export async function registerDevice(req, res) {
                     message: 'Este dispositivo ya está vinculado a otra cuenta.'
                 }));
             }
-            // Mismo teléfono: lo reactivamos si estaba revocado y actualizamos sus datos.
             await existing.update({
                 platform: platform ?? existing.platform,
                 model: model ?? existing.model,
@@ -35,8 +27,6 @@ export async function registerDevice(req, res) {
             return res.status(200).json(successMessage({ message: 'Dispositivo vinculado', extra: { data: existing } }));
         }
 
-        // Teléfono nuevo: revocamos cualquier dispositivo activo anterior de esta cuenta
-        // (re-vinculación automática tras login válido) y activamos este.
         await Device.update(
             { status: 'revoked', revoked_at: new Date(), revoked_by: null },
             { where: { employee_id: employeeId, status: 'active' } }
@@ -61,7 +51,6 @@ export async function registerDevice(req, res) {
     }
 }
 
-// ==================== ACTUALIZAR PUSH TOKEN ====================
 export async function updatePushToken(req, res) {
     try {
         const { device_uuid, push_token } = req.body;
@@ -79,7 +68,6 @@ export async function updatePushToken(req, res) {
     }
 }
 
-// ==================== MI DISPOSITIVO ====================
 export async function getMyDevice(req, res) {
     try {
         const device = await Device.findOne({

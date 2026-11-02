@@ -1,7 +1,6 @@
 import Site from '../../models/Site.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
-// ==================== LISTAR SEDES ====================
 export async function listSites(req, res) {
     try {
         const { status } = req.query;
@@ -17,7 +16,6 @@ export async function listSites(req, res) {
     }
 }
 
-// ==================== OBTENER SEDE ====================
 export async function getSite(req, res) {
     try {
         const site = await Site.findByPk(req.params.id);
@@ -30,7 +28,6 @@ export async function getSite(req, res) {
     }
 }
 
-// ==================== CREAR SEDE ====================
 export async function createSite(req, res) {
     try {
         const { name, address, lat, lng, radius_meters } = req.body;
@@ -50,7 +47,6 @@ export async function createSite(req, res) {
     }
 }
 
-// ==================== ACTUALIZAR SEDE ====================
 export async function updateSite(req, res) {
     try {
         const site = await Site.findByPk(req.params.id);
@@ -74,7 +70,6 @@ export async function updateSite(req, res) {
     }
 }
 
-// ==================== ELIMINAR SEDE ====================
 export async function deleteSite(req, res) {
     try {
         const site = await Site.findByPk(req.params.id);

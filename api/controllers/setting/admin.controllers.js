@@ -1,14 +1,12 @@
 import Setting from '../../models/Setting.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
-// Devuelve la fila única de ajustes, creándola con los valores por defecto si no existe.
 async function getOrCreateSettings() {
     let settings = await Setting.findOne({ order: [['id', 'ASC']] });
     if (!settings) settings = await Setting.create({});
     return settings;
 }
 
-// ==================== OBTENER AJUSTES ====================
 export async function getSettings(req, res) {
     try {
         const settings = await getOrCreateSettings();
@@ -20,7 +18,6 @@ export async function getSettings(req, res) {
     }
 }
 
-// ==================== ACTUALIZAR AJUSTES ====================
 export async function updateSettings(req, res) {
     try {
         const settings = await getOrCreateSettings();

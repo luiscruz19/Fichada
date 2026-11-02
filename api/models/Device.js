@@ -2,12 +2,6 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Dispositivo vinculado al empleado (device-binding estricto). La cuenta queda atada
- * al teléfono donde se activó; desde otro requiere reactivación del admin.
- * status = revoked es el kill switch: fuerza el re-login en la próxima apertura.
- * Las credenciales/JWT viven en el servicio auth; acá vive la integridad del dispositivo.
- */
 const Device = sequelize.define('devices', {
     id: {
         type: DataTypes.INTEGER,

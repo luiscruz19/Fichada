@@ -8,7 +8,6 @@ import { toCsv, toXlsx, toPdf } from '../../services/shift/exporters.js';
 
 const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email', 'expected_check_in', 'target_hours'];
 
-// ==================== LISTAR JORNADAS ====================
 export async function listShifts(req, res) {
     try {
         const { employee_id, status, from, to } = req.query;
@@ -40,7 +39,6 @@ export async function listShifts(req, res) {
     }
 }
 
-// ==================== OBTENER UNA JORNADA ====================
 export async function getShift(req, res) {
     try {
         const { id } = req.params;
@@ -65,7 +63,6 @@ export async function getShift(req, res) {
     }
 }
 
-// ==================== EXPORTAR (CSV / Excel / PDF) ====================
 export async function exportShifts(req, res) {
     try {
         const { format = 'csv', employee_id, status, from, to } = req.query;
@@ -86,7 +83,6 @@ export async function exportShifts(req, res) {
             return res.status(200).send(buffer);
         }
 
-        // por defecto CSV
         const csv = toCsv(rows);
         res.setHeader('Content-Type', 'text/csv; charset=utf-8');
         res.setHeader('Content-Disposition', `attachment; filename="jornadas-${stamp}.csv"`);

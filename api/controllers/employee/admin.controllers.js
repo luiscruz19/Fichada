@@ -8,7 +8,6 @@ import resetAccess from '../../services/employee/reset-access.js';
 
 const SAFE_ATTRS = { exclude: [] };
 
-// ==================== LISTAR EMPLEADOS ====================
 export async function listEmployees(req, res) {
     try {
         const { status, role, search } = req.query;
@@ -33,7 +32,6 @@ export async function listEmployees(req, res) {
     }
 }
 
-// ==================== OBTENER EMPLEADO ====================
 export async function getEmployee(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id, {
@@ -48,10 +46,7 @@ export async function getEmployee(req, res) {
     }
 }
 
-// ==================== CREAR / INVITAR EMPLEADO ====================
-// Crea el registro de dominio + el acceso real en auth (usuario verificado) y envía la
-// invitación por mailer. Vincula employee.user_id. Devuelve la contraseña temporal para
-// que el admin la comparta si el mail no se pudo enviar (p.ej. sin SMTP en dev).
+// Devuelve la contraseña temporal para que el admin la comparta si el mail no salió.
 export async function createEmployee(req, res) {
     try {
         const { first_name, last_name, email, role, expected_check_in, target_hours, work_days } = req.body;
@@ -61,7 +56,6 @@ export async function createEmployee(req, res) {
             return res.status(409).json(errorMessage({ message: 'Ya existe un empleado con este email' }));
         }
 
-        // Crea el acceso en auth (signup + verificación) y manda la invitación.
         let invite;
         try {
             invite = await inviteEmployee({ first_name, last_name, email });
@@ -95,7 +89,6 @@ export async function createEmployee(req, res) {
     }
 }
 
-// ==================== ACTUALIZAR EMPLEADO ====================
 export async function updateEmployee(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
@@ -114,7 +107,6 @@ export async function updateEmployee(req, res) {
     }
 }
 
-// ==================== DAR DE BAJA ====================
 export async function deactivateEmployee(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
@@ -128,7 +120,6 @@ export async function deactivateEmployee(req, res) {
     }
 }
 
-// ==================== REACTIVAR ====================
 export async function reactivateEmployee(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
@@ -142,9 +133,6 @@ export async function reactivateEmployee(req, res) {
     }
 }
 
-// ==================== REGENERAR ACCESO (nueva contraseña temporal) ====================
-// Para cuando se perdió la contraseña temporal. Genera una nueva en auth y resetea el PIN:
-// el empleado entra con la nueva contraseña y configura un PIN nuevo.
 export async function regenerateAccess(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
@@ -163,9 +151,6 @@ export async function regenerateAccess(req, res) {
     }
 }
 
-// ==================== RESETEAR PIN ====================
-// Borra el PIN del empleado: en el próximo ingreso vuelve a entrar con su contraseña
-// y configura un PIN nuevo.
 export async function resetPin(req, res) {
     try {
         const employee = await Employee.findByPk(req.params.id);
@@ -177,7 +162,6 @@ export async function resetPin(req, res) {
     }
 }
 
-// ==================== KILL SWITCH (revocar sesión/dispositivos) ====================
 export async function killSwitch(req, res) {
     const transaction = await sequelize.transaction();
     try {

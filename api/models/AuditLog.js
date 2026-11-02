@@ -2,11 +2,7 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Auditoría append-only de las correcciones. Cada cambio sobre una fichada (o la
- * resolución de una solicitud) deja un registro con el valor anterior y el nuevo.
- * Nunca se hace UPDATE/DELETE: sólo INSERT. Por eso paranoid:false y sin updatedAt.
- */
+// Append-only: nunca se hace UPDATE ni DELETE, por eso paranoid:false y sin updatedAt.
 const AuditLog = sequelize.define('audit_logs', {
     id: {
         type: DataTypes.INTEGER.UNSIGNED,

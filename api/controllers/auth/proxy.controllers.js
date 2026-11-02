@@ -4,10 +4,7 @@ import { errorMessage } from '../../utils/messages.js';
 const { AUTH_API_URL, AUTHORIZATION } = CONFIG;
 const BASIC = 'Basic ' + Buffer.from(`${AUTHORIZATION.USER}:${AUTHORIZATION.PASSWORD}`).toString('base64');
 
-/**
- * Proxy de login: el cliente (app mobile) pega acá, y el api reenvía a auth con el Basic
- * servicio↔servicio. Así auth queda interno (sin Traefik) y el cliente no embebe credenciales.
- */
+// auth no se expone: la app entra por acá y no necesita embeber el Basic Auth entre servicios.
 export async function login(req, res) {
     try {
         const r = await fetch(`${AUTH_API_URL}/auth/login`, {

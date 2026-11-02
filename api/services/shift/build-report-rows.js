@@ -37,9 +37,6 @@ export const REPORT_COLUMNS = [
     { key: 'check_out_location', header: 'Ubicación salida' },
 ];
 
-/**
- * Arma las filas del reporte de jornadas según los filtros, listas para exportar.
- */
 export default async function buildReportRows({ employee_id, status, from, to } = {}) {
     const where = {};
     if (employee_id) where.employee_id = employee_id;

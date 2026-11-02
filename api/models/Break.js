@@ -2,10 +2,6 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Pausa dentro de una jornada (Salir a pausa / Volver). Una jornada puede tener varias.
- * El tiempo de las pausas se descuenta del total trabajado.
- */
 const Break = sequelize.define('breaks', {
     id: {
         type: DataTypes.INTEGER,

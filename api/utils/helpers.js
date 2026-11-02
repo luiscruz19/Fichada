@@ -1,10 +1,6 @@
 import { validationResult } from 'express-validator';
 import { errorMessage } from './messages.js';
 
-/**
- * Corre un set de validaciones de express-validator y, si hay errores,
- * responde 400 con el detalle agrupado por campo.
- */
 export const validate = (validations) => {
     return async (req, res, next) => {
         await Promise.all(validations.map(validation => validation.run(req)));
