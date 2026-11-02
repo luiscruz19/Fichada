@@ -9,6 +9,15 @@ import CONFIG from '../config/config.js';
 
 const { APP_NAME, SECRET_KEY } = CONFIG;
 
+function verifyTotpCode(secret, code) {
+    return speakeasy.totp.verify({
+        secret,
+        encoding: 'base32',
+        token: String(code),
+        window: 1,
+    });
+}
+
 export async function setup2FA(req, res) {
     try {
         const { id } = req.user;
@@ -60,14 +69,7 @@ export async function verify2FA(req, res) {
             return res.status(409).json(errorMessage({ message: '2FA ya está activado.' }));
         }
 
-        const isValid = speakeasy.totp.verify({
-            secret: user.totp_secret,
-            encoding: 'base32',
-            token: String(code),
-            window: 1,
-        });
-
-        if (!isValid) {
+        if (!verifyTotpCode(user.totp_secret, code)) {
             return res.status(401).json(errorMessage({ message: 'Código inválido o expirado' }));
         }
 
@@ -96,14 +98,7 @@ export async function disable2FA(req, res) {
             return res.status(400).json(errorMessage({ message: 'Código requerido para desactivar 2FA' }));
         }
 
-        const isValid = speakeasy.totp.verify({
-            secret: user.totp_secret,
-            encoding: 'base32',
-            token: String(code),
-            window: 1,
-        });
-
-        if (!isValid) {
+        if (!verifyTotpCode(user.totp_secret, code)) {
             return res.status(401).json(errorMessage({ message: 'Código inválido o expirado' }));
         }
 
@@ -114,15 +109,6 @@ export async function disable2FA(req, res) {
         logger.error('disable2FA', { error: error?.message });
         return res.status(500).json(errorMessage({ message: 'Error al desactivar 2FA' }));
     }
-}
-
-export function verifyTotpCode(secret, code) {
-    return speakeasy.totp.verify({
-        secret,
-        encoding: 'base32',
-        token: String(code),
-        window: 1,
-    });
 }
 
 export async function verifyTotpLogin(req, res) {
@@ -148,14 +134,7 @@ export async function verifyTotpLogin(req, res) {
             return res.status(400).json(errorMessage({ message: 'Usuario no tiene 2FA configurado' }));
         }
 
-        const isValid = speakeasy.totp.verify({
-            secret: user.totp_secret,
-            encoding: 'base32',
-            token: String(code),
-            window: 1,
-        });
-
-        if (!isValid) {
+        if (!verifyTotpCode(user.totp_secret, code)) {
             return res.status(401).json(errorMessage({ message: 'Código incorrecto' }));
         }
 

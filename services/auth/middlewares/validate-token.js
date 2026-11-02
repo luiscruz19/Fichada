@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken';
 import { errorMessage } from '../utils/messages.js';
+import getRequestToken from '../utils/request-token.js';
 import CONFIG from '../config/config.js';
 import messages from '../config/messages.js';
 
@@ -7,12 +8,7 @@ const { generic } = messages;
 const { SECRET_KEY } = CONFIG;
 
 export default (req, res, next) => {
-    const headerToken = req.headers.token;
-    const authHeader = req.headers.authorization;
-    const bearerToken = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-        ? authHeader.slice(7).trim()
-        : null;
-    const token = headerToken || bearerToken;
+    const token = getRequestToken(req);
 
     if (!token) {
         return res.status(401).json(errorMessage({ message: generic.token_not_found }));
@@ -21,7 +17,7 @@ export default (req, res, next) => {
     try {
         const payload = jwt.verify(token, SECRET_KEY, { algorithms: ['HS256'] });
 
-        // jwt.verify acepta exp en 0 o NaN: esos tokens se rechazan acá.
+        // jwt.verify acepta tokens sin exp: acá se rechazan.
         const now = Math.floor(Date.now() / 1000);
         const expiresAt = Number(payload.exp ?? payload.expire ?? payload.expiration ?? 0);
         if (!expiresAt || Number.isNaN(expiresAt) || expiresAt <= now) {

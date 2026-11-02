@@ -11,11 +11,13 @@ import logger from '../utils/logger.js';
 import User from '../models/User.js';
 import LoginAttempt from '../models/LoginAttempt.js';
 import LoginLog from '../models/LoginLog.js';
-import { verifyTotpCode } from './totp.js';
 
 import sendMailService from '../services/send-mail.js';
 import signupTemplate from '../templates/signup.js';
 import forgotPasswordTemplate from '../templates/forgot-password.js';
+
+const LOGIN_ATTEMPT_TTL_MS = 24 * 60 * 60 * 1000;
+const LOGIN_ATTEMPT_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
 
 async function isBlocked(email, ip) {
     const attempt = await LoginAttempt.findOne({ where: { email: email.toLowerCase(), ip } });
@@ -46,12 +48,12 @@ async function resetAttempts(email, ip) {
 
 setInterval(async () => {
     try {
-        const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const cutoff = new Date(Date.now() - LOGIN_ATTEMPT_TTL_MS);
         await LoginAttempt.destroy({ where: { updated_at: { [Op.lt]: cutoff } }, force: true });
     } catch (err) {
         logger.error('login_attempts_cleanup', { error: err?.message });
     }
-}, 60 * 60 * 1000);
+}, LOGIN_ATTEMPT_CLEANUP_INTERVAL_MS);
 
 function extractRequestMeta(req) {
     const forwarded = req.headers['x-forwarded-for'];
@@ -230,7 +232,6 @@ export async function validateAccount(req, res) {
             return res.status(409).json(errorMessage({ message: messages.error.validate_account.error.verified }));
         }
         const verified = await User.update({ verified: 1 }, { where: { id: user.id } });
-        logger.info('validateAccount', { verified });
         if (!verified) {
             return res.status(500).json(errorMessage({ message: messages.error.validate_account.error.not_verified }));
         }

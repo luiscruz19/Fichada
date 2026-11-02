@@ -1,17 +1,12 @@
 import jwt from 'jsonwebtoken';
 import CONFIG from '../config/config.js';
 import { errorMessage } from '../utils/messages.js';
+import getRequestToken from '../utils/request-token.js';
 
 const { SECRET_KEY } = CONFIG;
 
 export default function requireNoPending2FA(req, res, next) {
-    const headerToken = req.headers.token;
-    const authHeader = req.headers.authorization;
-    const bearerToken = typeof authHeader === 'string' && authHeader.startsWith('Bearer ')
-        ? authHeader.slice(7).trim()
-        : null;
-    const token = headerToken || bearerToken;
-
+    const token = getRequestToken(req);
     if (!token) return next();
 
     try {
