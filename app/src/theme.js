@@ -1,4 +1,3 @@
-// Tokens del handoff de Claude Design, convertidos de oklch a hex para React Native.
 export const C = {
     bg: '#fafaf9',
     surface: '#ffffff',

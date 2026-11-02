@@ -5,11 +5,6 @@ import { C } from '../theme';
 import { Avatar } from '../components';
 import { buscarActualizacion, versionDetalle } from '../updates';
 
-/**
- * Menú del empleado (equivalente a la pestaña Perfil de otras apps del equipo): quién sos,
- * qué versión corre y el botón para traer la última sin reinstalar. Antes esto era un
- * Alert escondido detrás de un tap en el avatar: nadie lo encontraba.
- */
 export default function MenuSheet({ t, visible, name, estado, onClose, onLogout }) {
     const [buscando, setBuscando] = useState(false);
     const [version, setVersion] = useState(() => versionDetalle());

@@ -4,8 +4,7 @@ import * as Updates from 'expo-updates';
 
 let buscando = false;
 
-// Qué versión corre este teléfono: la del build y, si está corriendo una actualización OTA,
-// sus primeros 8 hex y cuándo se publicó. Es dato de soporte ("¿le llegó el arreglo o no?").
+// Dato de soporte: permite saber si al teléfono le llegó una actualización OTA.
 export function versionDetalle() {
     const app = Constants.expoConfig?.version ?? '1.0.0';
     let ota = 'build integrado';
@@ -21,12 +20,7 @@ export function versionDetalle() {
     return `v${app} · ${ota}`;
 }
 
-/**
- * Busca una versión nueva y la aplica. Con jornada abierta NO reinicia sola: deja el bundle
- * descargado (entra en el próximo arranque) porque reiniciar a mitad de jornada le corta la
- * pantalla al que está por fichar. `silencioso` es para el chequeo automático al volver a
- * primer plano: ahí no hay que sacar carteles si no hay nada nuevo.
- */
+// Con jornada abierta no reinicia: le cortaría la pantalla al que está por fichar.
 export async function buscarActualizacion({ silencioso = false, hayJornadaAbierta = false } = {}) {
     if (buscando) return;
     if (!Updates.isEnabled) {

@@ -4,11 +4,7 @@ import { Minus, Plus, Check } from 'lucide-react-native';
 import { C, R } from '../theme';
 import { fmtMinutos } from '../helpers';
 
-// Selector de hora hecho en JS a propósito: @react-native-community/datetimepicker es
-// módulo nativo y la app se distribuye por OTA con APK internos, sin Play Store; meterlo
-// obligaría a que cada empleado reinstale a mano.
-// El estado es un número (minutos desde medianoche): no hay string que parsear, no hay
-// formato que explicarle a nadie y no existe el "25:99" que antes desbordaba la fecha.
+// En JS a propósito: un selector nativo obligaría a reinstalar el APK, y la app se actualiza por OTA.
 
 function Redondo({ children, onPress }) {
     return (
@@ -33,8 +29,7 @@ function Fila({ etiqueta, onMenos, onMas }) {
 }
 
 export default function SelectorHora({ minutos, onChange, sugeridos = [], diaSiguiente, onDiaSiguiente }) {
-    // Módulo 1440 en las dos direcciones: la hora nunca se sale del día. El salto de día
-    // se decide con el toggle explícito, no como efecto colateral de un desbordamiento.
+    // La hora nunca sale del día: el salto al día siguiente lo decide el toggle.
     const mover = (delta) => onChange((minutos + delta + 1440) % 1440);
 
     return (
@@ -65,8 +60,7 @@ export default function SelectorHora({ minutos, onChange, sugeridos = [], diaSig
             <Fila etiqueta="Minutos (de a 15)" onMenos={() => mover(-15)} onMas={() => mover(15)} />
 
             {onDiaSiguiente ? (
-                // Turno nocturno: entró 22:00 y salió 06:00. Sin esto la salida queda ANTES
-                // de la entrada y la jornada se guardaría en 0 horas trabajadas.
+                // Turno nocturno: sin esto la salida queda antes de la entrada y la jornada en 0 horas.
                 <Pressable onPress={() => onDiaSiguiente(!diaSiguiente)}
                     style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 16 }}>
                     <View style={{

@@ -1,4 +1,3 @@
-// Strings de Fichada (es-AR por defecto, en) — del handoff de Claude Design.
 const STRINGS = {
     es: {
         sinFichar: 'Sin fichar', enJornada: 'En jornada', enPausa: 'En pausa', desde: 'desde',

@@ -4,8 +4,7 @@ import { AlertCircle, LogOut } from 'lucide-react-native';
 import { C, R, shadowPress } from '../theme';
 import { fmtTimeFromISO, fmtDateLong, cap } from '../helpers';
 
-// Se muestra cuando hay una jornada abierta de un día ANTERIOR: bloquea el fichaje
-// normal hasta cerrarla (regla de negocio: no se puede reabrir sin cerrar la previa).
+// Regla de negocio: no se puede fichar sin cerrar la jornada abierta de un día anterior.
 export default function BlockedShiftScreen({ t, lang, shift, onClose, busy }) {
     const ci = shift?.check_in ? new Date(shift.check_in) : null;
     return (
