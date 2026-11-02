@@ -27,10 +27,14 @@ export async function registerDevice(req, res) {
             return res.status(200).json(successMessage({ message: 'Dispositivo vinculado', extra: { data: existing } }));
         }
 
-        await Device.update(
+        const [replacedDevices] = await Device.update(
             { status: 'revoked', revoked_at: new Date(), revoked_by: null },
             { where: { employee_id: employeeId, status: 'active' } }
         );
+        if (replacedDevices > 0) {
+            // Corta la sesión del teléfono anterior y conserva la de este, que acaba de autenticarse.
+            await req.employee.update({ tokens_valid_after: new Date(req.user.iat * 1000) });
+        }
 
         const device = await Device.create({
             employee_id: employeeId,

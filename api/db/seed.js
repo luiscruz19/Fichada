@@ -1,3 +1,4 @@
+import addMissingColumns from './add-missing-columns.js';
 import sequelize from './sequelize.js';
 import '../models/index.js';
 import Employee from '../models/Employee.js';
@@ -25,6 +26,7 @@ async function resolveAuthUserId(email) {
     try {
         await sequelize.authenticate();
         await sequelize.sync();
+        await addMissingColumns();
 
         const { ADMIN } = CONFIG;
 

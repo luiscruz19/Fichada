@@ -34,6 +34,7 @@ export async function revokeDevice(req, res) {
             revoked_at: new Date(),
             revoked_by: req.employee?.id ?? null,
         });
+        await Employee.update({ tokens_valid_after: new Date() }, { where: { id: device.employee_id } });
         return res.status(200).json(successMessage({ message: 'Dispositivo revocado', extra: { data: device } }));
     } catch (error) {
         return res.status(500).json(errorMessage({
