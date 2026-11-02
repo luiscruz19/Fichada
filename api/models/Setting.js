@@ -8,11 +8,6 @@ const Setting = sequelize.define('settings', {
         primaryKey: true,
         autoIncrement: true
     },
-    default_target_hours: {
-        type: DataTypes.DECIMAL(4, 2),
-        allowNull: true,
-        comment: 'Jornada por defecto, en horas'
-    },
     default_expected_check_in: {
         type: DataTypes.TIME,
         allowNull: true,
@@ -28,24 +23,6 @@ const Setting = sequelize.define('settings', {
         allowNull: false,
         defaultValue: 0,
         comment: 'Minutos de tolerancia para considerar una llegada como tarde'
-    },
-    timezone: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        defaultValue: 'America/Argentina/Buenos_Aires',
-        comment: 'Zona horaria del sistema (Argentina, UTC−3)'
-    },
-    rounding_minutes: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0,
-        comment: 'Redondeo de fichadas al múltiplo de minutos. 0 = desactivado'
-    },
-    location_required: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: true,
-        comment: 'Ubicación obligatoria para fichar (sin GPS no se ficha)'
     },
     allow_breaks: {
         type: DataTypes.BOOLEAN,

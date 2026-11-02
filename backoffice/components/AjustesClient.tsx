@@ -16,12 +16,8 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
     async function save() {
         setBusy(true);
         const body = {
-            default_target_hours: s.default_target_hours ? Number(s.default_target_hours) : null,
             default_expected_check_in: s.default_expected_check_in || null,
             late_tolerance_minutes: Number(s.late_tolerance_minutes ?? 0),
-            rounding_minutes: Number(s.rounding_minutes ?? 0),
-            timezone: s.timezone || 'America/Argentina/Buenos_Aires',
-            location_required: !!s.location_required,
             allow_breaks: !!s.allow_breaks,
             allow_correction_requests: !!s.allow_correction_requests,
             work_days: Array.isArray(s.work_days) ? s.work_days : null,
@@ -46,16 +42,12 @@ export function AjustesClient({ settings, sites }: { settings: Setting | null; s
             <div style={{ padding: '18px 28px 28px', maxWidth: 760, display: 'flex', flexDirection: 'column', gap: 18 }}>
                 <Card title="Jornada y reglas">
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-                        <Field label="Jornada por defecto (horas)"><input type="number" step="0.5" value={s.default_target_hours ?? ''} onChange={(e) => set('default_target_hours', e.target.value)} style={inp} /></Field>
-                        <Field label="Entrada esperada"><input type="time" value={s.default_expected_check_in ?? ''} onChange={(e) => set('default_expected_check_in', e.target.value)} style={inp} /></Field>
-                        <Field label="Tolerancia tardanza (min)"><input type="number" value={s.late_tolerance_minutes ?? 0} onChange={(e) => set('late_tolerance_minutes', e.target.value)} style={inp} /></Field>
-                        <Field label="Redondeo de fichadas (min)"><input type="number" value={s.rounding_minutes ?? 0} onChange={(e) => set('rounding_minutes', e.target.value)} style={inp} /></Field>
-                        <Field label="Zona horaria"><input value={s.timezone ?? 'America/Argentina/Buenos_Aires'} onChange={(e) => set('timezone', e.target.value)} style={inp} /></Field>
+                        <Field label="Entrada esperada por defecto"><input type="time" value={s.default_expected_check_in ?? ''} onChange={(e) => set('default_expected_check_in', e.target.value)} style={inp} /></Field>
+                        <Field label="Tolerancia de puntualidad (min)"><input type="number" value={s.late_tolerance_minutes ?? 0} onChange={(e) => set('late_tolerance_minutes', e.target.value)} style={inp} /></Field>
                     </div>
                 </Card>
 
                 <Card title="Fichaje">
-                    <Toggle label="Ubicación obligatoria para fichar" value={!!s.location_required} onChange={(v) => set('location_required', v)} />
                     <Toggle label="Permitir pausas (salir / volver)" value={!!s.allow_breaks} onChange={(v) => set('allow_breaks', v)} />
                     <Toggle label="Permitir solicitudes de corrección" value={!!s.allow_correction_requests} onChange={(v) => set('allow_correction_requests', v)} />
                 </Card>

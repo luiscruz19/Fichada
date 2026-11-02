@@ -12,7 +12,7 @@ import { secondsToHHMM } from '@/lib/format';
 import { computeMetrics, minToHHMM } from '@/lib/metrics';
 import { TZ } from '@/lib/format';
 import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
-import type { Shift, Employee } from '@/lib/types';
+import type { Employee, Setting, Shift } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +34,11 @@ export default async function ReporteEmpleadoPage({ params, searchParams }: { pa
     const shifts = shiftsRes?.data || [];
     const emp = empRes?.data;
     const name = emp ? `${emp.first_name} ${emp.last_name}` : (shifts[0]?.employee ? `${shifts[0].employee!.first_name} ${shifts[0].employee!.last_name}` : `Empleado #${id}`);
-    const m = computeMetrics(shifts, range);
+    const settingsJson = await apiGetJson<{ data: Setting }>('/settings/admin');
+    const m = computeMetrics(shifts, range, {
+        toleranceMinutes: settingsJson?.data?.late_tolerance_minutes,
+        defaultExpectedCheckIn: settingsJson?.data?.default_expected_check_in,
+    });
 
     const backHref = (() => {
         const p = new URLSearchParams();
