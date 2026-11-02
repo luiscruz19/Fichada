@@ -2,7 +2,6 @@ import 'dotenv/config';
 
 const isProduction = process.env.NODE_ENV === 'production';
 
-// In production, critical vars must be present
 if (isProduction) {
     const required = ['SECRET_KEY', 'DB_HOST_AUTH', 'DB_USER_AUTH', 'DB_ROOT_PASSWORD_AUTH', 'DB_NAME_AUTH'];
     for (const key of required) {

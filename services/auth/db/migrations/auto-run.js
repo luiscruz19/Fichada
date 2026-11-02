@@ -42,7 +42,7 @@ async function runPendingMigrations() {
                 console.info(`[migrations] OK   ${file}`);
             } catch (err) {
                 console.error(`[migrations] ERR  ${file}:`, err.message);
-                // Stop on first failure to avoid partial state
+                // Se corta en la primera falla para no dejar un estado parcial.
                 break;
             }
         }

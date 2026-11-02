@@ -25,17 +25,15 @@ export default {
             }
         };
 
-        // users
         await renameIfExists('users', 'createdAt', 'created_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP');
         await renameIfExists('users', 'updatedAt', 'updated_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
         await addIfMissing('users', 'deleted_at', { type: DataTypes.DATE, allowNull: true, defaultValue: null });
 
-        // login_attempts
         await renameIfExists('login_attempts', 'createdAt', 'created_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP');
         await renameIfExists('login_attempts', 'updatedAt', 'updated_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
         await addIfMissing('login_attempts', 'deleted_at', { type: DataTypes.DATE, allowNull: true, defaultValue: null });
 
-        // login_logs — puede no tener updated_at
+        // login_logs puede no tener updated_at.
         await renameIfExists('login_logs', 'createdAt', 'created_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP');
         await renameIfExists('login_logs', 'updatedAt', 'updated_at', 'DATETIME NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP');
         await addIfMissing('login_logs', 'updated_at', { type: DataTypes.DATE, allowNull: true, defaultValue: null });

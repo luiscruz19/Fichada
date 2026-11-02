@@ -1,13 +1,3 @@
-/**
- * CLI script to create or update an admin user.
- *
- * Usage:
- *   node scripts/create-admin.js [email] [password] [nombre]
- *
- * Falls back to ADMIN_EMAIL / ADMIN_PASSWORD / ADMIN_NOMBRE env vars if args not provided.
- *
- * Requires DB env vars: DB_HOST_AUTH, DB_USER_AUTH, DB_ROOT_PASSWORD_AUTH, DB_NAME_AUTH, DB_PORT_AUTH
- */
 import 'dotenv/config';
 import bcrypt from 'bcryptjs';
 import { Sequelize, DataTypes } from 'sequelize';

@@ -20,7 +20,7 @@ export default function requireNoPending2FA(req, res, next) {
             return res.status(401).json(errorMessage({ message: 'Debés completar la verificación 2FA' }));
         }
     } catch {
-        // Invalid/expired token — validateToken middleware will handle it
+        // Token inválido o vencido: lo resuelve validateToken.
     }
 
     next();

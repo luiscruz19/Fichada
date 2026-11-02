@@ -24,8 +24,7 @@ api.get('/', (req, res) => {
     res.status(200).json({ message: 'AUTH service is running' });
 });
 
-// Internal: generate a fresh token for a known verified user.
-// Protected by a shared secret (not the Basic Auth credentials).
+// Endpoints internos: exigen el secreto compartido además del Basic Auth.
 function validateClient(req, res, next) {
     const token = req.headers.token;
     if (!token) return res.status(401).json(errorMessage({ message: generic.token_not_found }));
@@ -50,8 +49,6 @@ api.get('/generate-token', [validateClient], async (req, res) => {
     }));
 });
 
-// Internal: regenera la contraseña de un user (server-to-server, protegido por SECRET_KEY).
-// Lo usa el api para "regenerar acceso" de un empleado que perdió su contraseña temporal.
 api.post('/set-password', [validateClient], async (req, res) => {
     const { user_id, password } = req.body || {};
     if (!user_id || !password) {

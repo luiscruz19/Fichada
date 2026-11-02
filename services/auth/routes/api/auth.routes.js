@@ -28,19 +28,17 @@ api.post('/validate-account', [validate(validateAccountValidation)], validateAcc
 api.post('/forgot-password', [forgotPasswordLimit, validate(forgotPasswordValidation)], forgotPassword);
 api.post('/restore-password', [validate(restorePasswordValidation)], restorePassword);
 
-// Both paths do the same — /validate-token is the canonical form, /me is the alias
 api.get('/validate-token', [validateToken, requireNoPending2FA], validateTokenController);
 api.get('/me', [validateToken, requireNoPending2FA], validateTokenController);
 
 api.get('/search', [], searchUser);
 
-// 2FA endpoints — require a valid non-pending JWT
 api.post('/2fa/setup', [validateToken, requireNoPending2FA], setup2FA);
 api.post('/2fa/verify', [validateToken, requireNoPending2FA, totpLimit], verify2FA);
 api.post('/2fa/disable', [validateToken, requireNoPending2FA, totpLimit], disable2FA);
 api.post('/2fa/login-verify', [totpLimit], verifyTotpLogin);
 
-// Internal service-to-service endpoints (protected by Basic Auth at router level)
+// Internos entre servicios: los protege el Basic Auth global.
 api.get('/user-by-email/:email', findByEmail);
 api.get('/user-by-id/:id', findById);
 api.post('/internal/generate-guest-token', generateGuestToken);

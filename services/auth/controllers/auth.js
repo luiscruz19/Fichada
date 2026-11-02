@@ -44,7 +44,6 @@ async function resetAttempts(email, ip) {
     await LoginAttempt.update({ count: 0, blocked_until: 0 }, { where: { email: email.toLowerCase(), ip } });
 }
 
-// Cleanup stale login_attempt records once per hour (24h TTL)
 setInterval(async () => {
     try {
         const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
@@ -70,9 +69,7 @@ function logLogin(fields) {
     LoginLog.create(fields).catch(err => logger.error('login_log_create', { error: err?.message }));
 }
 
-// Generates a short-lived activation link token.
-// When AUTH_USE_JWT_LINKS=true, uses a JWT with 15-day expiration instead of the raw uuid.
-// The JWT form lets the frontend validate the token without a DB roundtrip.
+// El JWT le permite al frontend validar el enlace sin consultar la base.
 function buildActivationToken(userData) {
     if (AUTH_USE_JWT_LINKS) {
         return jwt.sign(
@@ -215,14 +212,13 @@ export async function guestSignup(req, res) {
 export async function validateAccount(req, res) {
     const { id, token: remember_token } = req.body;
     try {
-        // Support both raw uuid tokens and JWT activation tokens (AUTH_USE_JWT_LINKS=true)
         let resolvedToken = remember_token;
         if (AUTH_USE_JWT_LINKS) {
             try {
                 const decoded = jwt.verify(remember_token, SECRET_KEY, { algorithms: ['HS256'] });
                 if (decoded.purpose === 'activation') resolvedToken = decoded.remember_token;
             } catch {
-                // Not a JWT — fall through and try raw uuid lookup
+                // No es un JWT: se sigue con la búsqueda por uuid.
             }
         }
 
@@ -275,7 +271,7 @@ export async function forgotPassword(req, res) {
     try {
         const { email, pathname = '' } = req.body;
         const find = await User.findOne({ where: { email } });
-        // Always return 200 regardless of whether the email exists — prevents user enumeration
+        // Siempre 200, exista o no el email: evita la enumeración de usuarios.
         if (!find) {
             return res.status(200).json(successMessage({ message: messages.success.forgot_password }));
         }
@@ -283,7 +279,6 @@ export async function forgotPassword(req, res) {
 
         let hash;
         if (AUTH_USE_JWT_LINKS) {
-            // JWT with 15-day expiry for frontend-verifiable reset links
             hash = jwt.sign(
                 { id: data.id, email: data.email, remember_token: data.remember_token, purpose: 'reset' },
                 SECRET_KEY,

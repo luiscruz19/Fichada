@@ -12,7 +12,7 @@ const buildAllowedOrigins = () => {
             console.error('[security] CORS_ALLOWED_ORIGINS or WEB_URL must be set in production');
             process.exit(1);
         }
-        // In development, allow any origin so local frontends work without configuration
+        // En desarrollo se acepta cualquier origen: los frontends locales andan sin configurar.
         return null;
     }
 
@@ -24,7 +24,7 @@ const allowedOrigins = buildAllowedOrigins();
 
 const corsOptions = {
     origin(origin, callback) {
-        // Allow server-to-server requests (no Origin header) and configured origins
+        // Los pedidos entre servidores no traen Origin.
         if (!origin || !allowedOrigins || allowedOrigins.includes(origin)) {
             return callback(null, true);
         }
@@ -58,7 +58,7 @@ const apiRateLimit = rateLimit({
 
 export const applySecurity = (app) => {
     app.use(helmet({
-        // API-only service — no CSP or COEP needed
+        // Solo sirve JSON: CSP y COEP no aplican.
         contentSecurityPolicy: false,
         crossOriginEmbedderPolicy: false,
         hsts: isProduction ? { maxAge: 31536000, includeSubDomains: true } : false,

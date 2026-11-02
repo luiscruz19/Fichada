@@ -4,7 +4,6 @@ import validateToken from '../../middlewares/validate-token.js';
 
 const api = Router();
 
-// Internal endpoint — service-to-service user resolution by email
 api.get('/by-email/:email', findByEmail);
 
 api.put('/update-password', [validateToken], updatePassword);
