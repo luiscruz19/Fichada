@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Ic } from './icons';
 import { ChipTone } from './ui';
 import { FichadaMap, type FichadaPoint } from './FichadaMap';
-import { fmtTime, fmtDateShort, secondsToHHMM } from '@/lib/format';
+import { fmtTime, fmtDateShort, secondsToHHMM, sumBreakSeconds } from '@/lib/format';
 import type { Shift } from '@/lib/types';
 
 export function EmpleadoShifts({ shifts, name }: { shifts: Shift[]; name: string }) {
@@ -25,7 +25,7 @@ export function EmpleadoShifts({ shifts, name }: { shifts: Shift[]; name: string
                                 <tr><td className="td" colSpan={7} style={{ textAlign: 'center', color: 'var(--ink-3)', padding: '28px 0' }}>No hay fichadas en el período seleccionado.</td></tr>
                             )}
                             {shifts.map((s) => {
-                                const pausas = (s.breaks || []).reduce((a, b) => a + (b.duration_seconds || 0), 0);
+                                const pausas = sumBreakSeconds(s.breaks);
                                 const hasIn = s.check_in_lat != null && s.check_in_lng != null;
                                 const hasOut = s.check_out_lat != null && s.check_out_lng != null;
                                 return (
@@ -56,7 +56,7 @@ export function EmpleadoShifts({ shifts, name }: { shifts: Shift[]; name: string
 }
 
 function ShiftDrawer({ shift, name, onClose }: { shift: Shift; name: string; onClose: () => void }) {
-    const pausas = (shift.breaks || []).reduce((a, b) => a + (b.duration_seconds || 0), 0);
+    const pausas = sumBreakSeconds(shift.breaks);
     const points: FichadaPoint[] = [];
     if (shift.check_in_lat != null && shift.check_in_lng != null) points.push({ lat: Number(shift.check_in_lat), lng: Number(shift.check_in_lng), kind: 'in', label: `Entrada ${fmtTime(shift.check_in) || ''}`.trim() });
     if (shift.check_out_lat != null && shift.check_out_lng != null) points.push({ lat: Number(shift.check_out_lat), lng: Number(shift.check_out_lng), kind: 'out', label: `Salida ${fmtTime(shift.check_out) || ''}`.trim() });

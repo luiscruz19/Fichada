@@ -84,18 +84,6 @@ export type CorrectionRequest = {
     employee?: Employee;
 };
 
-export type AuditLog = {
-    id: number;
-    entity: string;
-    entity_id: number | null;
-    admin_id: number | null;
-    action: string;
-    old_values: any;
-    new_values: any;
-    reason: string | null;
-    created_at: string;
-};
-
 export type Row = {
     shift: Shift;
     emp: string;

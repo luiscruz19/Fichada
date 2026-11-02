@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation';
 import { getToken, apiGetJson, getAdminName } from '@/lib/api';
 import { Sidebar } from '@/components/Sidebar';
 import { MapaClient, type MapPoint } from '@/components/MapaClient';
-import { TZ } from '@/lib/metrics';
+import { TZ } from '@/lib/format';
 import type { Shift } from '@/lib/types';
 
 export const dynamic = 'force-dynamic';

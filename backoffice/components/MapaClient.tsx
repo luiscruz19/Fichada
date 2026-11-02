@@ -13,6 +13,9 @@ export type MapPoint = {
     shiftId: number;
 };
 
+const DEFAULT_CENTER = { lat: -31.4, lng: -64.2 };
+const DEFAULT_ZOOM = 5;
+
 export function MapaClient({ points }: { points: MapPoint[] }) {
     const mapEl = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
@@ -29,8 +32,8 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
                 const g = await ensureGoogleMaps();
                 if (cancelled || !mapEl.current) return;
                 mapRef.current = new g.maps.Map(mapEl.current, {
-                    center: { lat: -31.4, lng: -64.2 },
-                    zoom: 5,
+                    center: DEFAULT_CENTER,
+                    zoom: DEFAULT_ZOOM,
                     mapTypeControl: false,
                     streetViewControl: false,
                     fullscreenControl: true,

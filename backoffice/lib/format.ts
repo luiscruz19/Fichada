@@ -1,8 +1,8 @@
 const DIAS = ['dom', 'lun', 'mar', 'mié', 'jue', 'vie', 'sáb'];
-const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+export const MESES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 // El server corre en UTC y cada navegador en su zona: Intl fija siempre la hora de Argentina.
-const TZ = 'America/Argentina/Buenos_Aires';
+export const TZ = 'America/Argentina/Buenos_Aires';
 const WEEKDAY: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
 
 function tzParts(iso: string): Record<string, string> {
@@ -32,6 +32,10 @@ export function secondsToHHMM(s?: number | null): string {
     const h = Math.floor(s / 3600);
     const m = Math.floor((s % 3600) / 60);
     return h === 0 ? `${m}m` : `${h}h ${String(m).padStart(2, '0')}m`;
+}
+
+export function sumBreakSeconds(breaks?: { duration_seconds: number | null }[]): number {
+    return (breaks || []).reduce((total, b) => total + (b.duration_seconds || 0), 0);
 }
 
 export function initials(name: string): string {

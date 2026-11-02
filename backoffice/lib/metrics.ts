@@ -1,7 +1,12 @@
 import type { Shift } from './types';
 import { addDaysKey, daysBetween, fmtKeyShort, todayKeyAR } from './daterange';
+import { TZ } from './format';
 
-export const TZ = 'America/Argentina/Buenos_Aires';
+const MAX_CHART_DAYS = 62;
+const DEFAULT_CHART_DAYS = 14;
+const WEEK_DAYS = 7;
+const DAY_KEYS_GUARD = 400;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 export type Range = { fromKey: string | null; toKey: string | null };
 
@@ -10,14 +15,14 @@ function buildDayKeys(range?: Range): string[] {
     if (range?.fromKey && range?.toKey) {
         const total = daysBetween(range.fromKey, range.toKey);
         toK = range.toKey;
-        fromK = total <= 62 ? range.fromKey : addDaysKey(range.toKey, -61);
+        fromK = total <= MAX_CHART_DAYS ? range.fromKey : addDaysKey(range.toKey, 1 - MAX_CHART_DAYS);
     } else {
         toK = todayKeyAR();
-        fromK = addDaysKey(toK, -13);
+        fromK = addDaysKey(toK, 1 - DEFAULT_CHART_DAYS);
     }
     const days: string[] = [];
     let k = fromK;
-    for (let i = 0; i < 400; i++) {
+    for (let i = 0; i < DAY_KEYS_GUARD; i++) {
         days.push(k);
         if (k === toK) break;
         k = addDaysKey(k, 1);
@@ -88,12 +93,9 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
     const tk = todayKey();
 
     const weekKeys = new Set<string>();
-    {
-        const base = new Date();
-        for (let i = 0; i < 7; i++) {
-            const d = new Date(base.getTime() - i * 86400000);
-            weekKeys.add(localParts(d.toISOString()).dateKey);
-        }
+    const nowMs = Date.now();
+    for (let i = 0; i < WEEK_DAYS; i++) {
+        weekKeys.add(localParts(new Date(nowMs - i * MS_PER_DAY).toISOString()).dateKey);
     }
 
     const per = new Map<number, PersonMetric & { _ci: number[]; _punc: [number, number] }>();
@@ -121,7 +123,10 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
 
         const ciMin = ci.h * 60 + ci.m;
         allCheckin.push(ciMin);
-        if (s.check_out) allCheckout.push((() => { const co = localParts(s.check_out); return co.h * 60 + co.m; })());
+        if (s.check_out) {
+            const co = localParts(s.check_out);
+            allCheckout.push(co.h * 60 + co.m);
+        }
 
         const expected = hhmmToMin(s.employee?.expected_check_in);
         let personPunctOk = 0, personPunctTotal = 0;
@@ -146,16 +151,16 @@ export function computeMetrics(shifts: Shift[], range?: Range): Metrics {
         per.set(s.employee_id, cur);
     }
 
+    const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
+
     const perPerson: PersonMetric[] = [...per.values()].map((p) => ({
         id: p.id, name: p.name, email: p.email,
         count: p.count, seconds: p.seconds, open: p.open,
         avgSeconds: p.count ? Math.round(p.seconds / p.count) : 0,
-        avgCheckinMin: p._ci.length ? Math.round(p._ci.reduce((a, b) => a + b, 0) / p._ci.length) : null,
+        avgCheckinMin: avg(p._ci),
         punctualPct: p._punc[1] ? Math.round((p._punc[0] / p._punc[1]) * 100) : null,
         lastCheckIn: p.lastCheckIn,
     })).sort((a, b) => b.seconds - a.seconds);
-
-    const avg = (arr: number[]) => arr.length ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null;
 
     return {
         totalSeconds,

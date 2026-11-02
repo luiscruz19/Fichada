@@ -9,7 +9,8 @@ import { DateRangePicker } from '@/components/DateRangePicker';
 import { BarChart } from '@/components/BarChart';
 import { EmpleadoShifts } from '@/components/EmpleadoShifts';
 import { secondsToHHMM } from '@/lib/format';
-import { computeMetrics, minToHHMM, TZ } from '@/lib/metrics';
+import { computeMetrics, minToHHMM } from '@/lib/metrics';
+import { TZ } from '@/lib/format';
 import { resolveRange, rangeToApiQuery } from '@/lib/daterange';
 import type { Shift, Employee } from '@/lib/types';
 

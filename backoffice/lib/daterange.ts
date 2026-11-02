@@ -1,10 +1,13 @@
 // Claves de fecha YYYY-MM-DD en hora de Argentina (UTC−3); el api recibe instantes UTC.
+import { MESES } from './format';
+
 const OFFSET_H = -3;
+const MS_PER_HOUR = 60 * 60 * 1000;
+const MS_PER_DAY = 24 * MS_PER_HOUR;
 const pad = (n: number) => String(n).padStart(2, '0');
-const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
 
 function keyFromDate(d: Date): string {
-    const s = new Date(d.getTime() + OFFSET_H * 3600 * 1000);
+    const s = new Date(d.getTime() + OFFSET_H * MS_PER_HOUR);
     return `${s.getUTCFullYear()}-${pad(s.getUTCMonth() + 1)}-${pad(s.getUTCDate())}`;
 }
 
@@ -14,7 +17,7 @@ export function todayKeyAR(): string {
 
 export function addDaysKey(key: string, n: number): string {
     const [y, m, d] = key.split('-').map(Number);
-    const t = Date.UTC(y, m - 1, d) + n * 86400000;
+    const t = Date.UTC(y, m - 1, d) + n * MS_PER_DAY;
     const x = new Date(t);
     return `${x.getUTCFullYear()}-${pad(x.getUTCMonth() + 1)}-${pad(x.getUTCDate())}`;
 }
@@ -25,19 +28,19 @@ export function monthStartKey(key: string): string {
 }
 
 export function fmtKeyShort(key: string): string {
-    const [y, m, d] = key.split('-').map(Number);
-    return `${d} ${MES[m - 1]}`;
+    const [, m, d] = key.split('-').map(Number);
+    return `${d} ${MESES[m - 1]}`;
 }
 
 export function fmtKeyLong(key: string): string {
     const [y, m, d] = key.split('-').map(Number);
-    return `${d} ${MES[m - 1]} ${y}`;
+    return `${d} ${MESES[m - 1]} ${y}`;
 }
 
 export function daysBetween(fromKey: string, toKey: string): number {
     const [fy, fm, fd] = fromKey.split('-').map(Number);
     const [ty, tm, td] = toKey.split('-').map(Number);
-    return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / 86400000) + 1;
+    return Math.round((Date.UTC(ty, tm - 1, td) - Date.UTC(fy, fm - 1, fd)) / MS_PER_DAY) + 1;
 }
 
 export type PresetKey = 'today' | 'yesterday' | '7d' | '30d' | 'month' | 'all';
