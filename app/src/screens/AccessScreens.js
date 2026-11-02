@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, Pressable, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, Pressable, Image, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { Delete, Fingerprint, ArrowLeft } from 'lucide-react-native';
 import { C, R, shadowPress } from '../theme';
 

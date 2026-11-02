@@ -5,7 +5,7 @@ import { ArrowLeft, CheckCircle2, AlertCircle, Pencil } from 'lucide-react-nativ
 import { C, R, shadow1 } from '../theme';
 import { Chip } from '../components';
 import SelectorHora from '../components/TimePicker';
-import { fmtTimeFromISO, fmtDur, fmtDateLong, cap, partesAr, isoDesdeMinutosAr } from '../helpers';
+import { fmtTimeFromISO, fmtDur, fmtDateLong, cap, partesAr, isoDesdeMinutosAr, MINUTOS_POR_DIA } from '../helpers';
 import { getHistory, createCorrectionRequest } from '../api';
 
 function dayLabel(iso, lang) {
@@ -84,11 +84,15 @@ function Stat({ label, value, accent }) {
 }
 
 const SUGERIDOS = [13 * 60, 17 * 60, 18 * 60, 19 * 60, 20 * 60];
+const SALIDA_INICIAL = 18 * 60;
+const JORNADA_TIPICA = 8 * 60;
+const PASO_MINUTOS = 15;
+const ULTIMO_PASO_DEL_DIA = MINUTOS_POR_DIA - PASO_MINUTOS;
 
 function CorrectionModal({ t, shift, onClose, onSent }) {
     const insets = useSafeAreaInsets();
     const [reason, setReason] = useState('');
-    const [minutos, setMinutos] = useState(18 * 60);
+    const [minutos, setMinutos] = useState(SALIDA_INICIAL);
     const [diaSiguiente, setDiaSiguiente] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
@@ -97,8 +101,8 @@ function CorrectionModal({ t, shift, onClose, onSent }) {
     useEffect(() => {
         if (!shift) return;
         const entrada = partesAr(shift.check_in).min;
-        const propuesta = Math.min(23 * 60 + 45, Math.round((entrada + 8 * 60) / 15) * 15);
-        setMinutos(propuesta % 1440);
+        const redondeada = Math.round((entrada + JORNADA_TIPICA) / PASO_MINUTOS) * PASO_MINUTOS;
+        setMinutos(Math.min(ULTIMO_PASO_DEL_DIA, redondeada));
         setDiaSiguiente(false);
         setReason('');
         setError(null);

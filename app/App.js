@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { View, Text, ActivityIndicator, Alert, StatusBar, AppState } from 'react-native';
+import { View, ActivityIndicator, Alert, StatusBar, AppState } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { getItem, setItem, IS_WEB } from './src/storage';
 import * as Location from 'expo-location';
@@ -77,6 +77,14 @@ function computeJornada(events, now) {
 
 const STATUS_MAP = { out: 'fuera', in: 'trabajando', on_break: 'pausa' };
 
+const isAuthError = (e) => e.status === 401 || e.status === 403;
+
+async function canUseBiometrics(localPin) {
+    const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
+    const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
+    return !!localPin && hw && enrolled;
+}
+
 async function captureLocation() {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
@@ -114,9 +122,7 @@ export default function App() {
         if (!last) { setSession('emailEntry'); return; }
         setEmail(last);
         const localPin = await getItem(PIN_KEY);
-        const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
-        const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
-        setCanBio(!!localPin && hw && enrolled);
+        setCanBio(await canUseBiometrics(localPin));
         if (localPin) { setSession('loginPin'); return; }
         try {
             const res = await hasPin(last);
@@ -144,7 +150,7 @@ export default function App() {
                 bootCargoStatus.current = true;
                 setSession('active');
             } catch (e) {
-                if (e.status === 401 || e.status === 403) {
+                if (isAuthError(e)) {
                     await clearToken();
                     await goToLogin();
                     return;
@@ -172,7 +178,7 @@ export default function App() {
             setShift(data.shift || null);
         } catch (e) {
             // 403: empleado dado de baja.
-            if (e.status === 401 || e.status === 403) { await clearToken(); await goToLogin(); }
+            if (isAuthError(e)) { await clearToken(); await goToLogin(); }
         }
     }, [goToLogin]);
 
@@ -185,7 +191,7 @@ export default function App() {
                 if (full) setName(full);
                 if (p.target_hours) setTargetMin(Math.round(Number(p.target_hours) * 60));
             }
-        } catch (e) { /* perfil no crítico para fichar */ }
+        } catch { /* el perfil no es crítico para fichar */ }
     }, []);
 
     const loadNotis = useCallback(async () => {
@@ -223,10 +229,7 @@ export default function App() {
             await setItem(EMAIL_KEY, e);
             const res = await hasPin(e);
             if (res?.has_pin) {
-                const localPin = await getItem(PIN_KEY);
-                const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
-                const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
-                setCanBio(!!localPin && hw && enrolled);
+                setCanBio(await canUseBiometrics(await getItem(PIN_KEY)));
                 setSession('loginPin');
             } else {
                 setSession('loginPassword');
@@ -304,7 +307,7 @@ export default function App() {
             await refresh();
         } catch (e) {
             // Reintentar con un token vencido nunca funcionaría: vuelve al ingreso.
-            if (e.status === 401 || e.status === 403) {
+            if (isAuthError(e)) {
                 await clearToken(); await goToLogin(); return;
             }
             Alert.alert(

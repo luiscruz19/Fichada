@@ -1,10 +1,10 @@
 import React from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import {
-    Clock, ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight, ChevronDown,
+    ArrowRight, LogOut, Coffee, Play, Bell, CheckCircle2, Calendar, ChevronRight, ChevronDown,
 } from 'lucide-react-native';
 import { C, R, shadow1, shadowPress } from '../theme';
-import { Dot, Chip, Avatar } from '../components';
+import { Dot, Avatar } from '../components';
 import { fmtTime, fmtDur, fmtDateLong, cap, pad } from '../helpers';
 
 const STATUS_META = {

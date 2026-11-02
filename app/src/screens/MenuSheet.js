@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
-import { RefreshCw, LogOut, Smartphone, ChevronRight } from 'lucide-react-native';
+import { RefreshCw, LogOut, ChevronRight } from 'lucide-react-native';
 import { C } from '../theme';
 import { Avatar } from '../components';
 import { buscarActualizacion, versionDetalle } from '../updates';
