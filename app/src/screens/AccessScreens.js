@@ -5,11 +5,7 @@ import { C, R, shadowPress } from '../theme';
 
 const LOGO = require('../../assets/icon-512.png');
 
-/**
- * Envoltorio de las pantallas de acceso. Con el edge-to-edge de SDK 54 la ventana NO se
- * achica al abrir el teclado: sin esto el teclado tapa el input y el botón de ingresar.
- * El ScrollView permite además llegar al botón en pantallas bajas.
- */
+// Con edge-to-edge (SDK 54) la ventana no se achica: sin esto el teclado tapa el input y el botón.
 function Pantalla({ children }) {
     return (
         <KeyboardAvoidingView behavior="padding" style={{ flex: 1, backgroundColor: C.bg }}>
@@ -36,7 +32,6 @@ function Brand({ subtitle }) {
     );
 }
 
-// ---- Paso 1: email ----
 export function EmailScreen({ t, onContinue, busy, error, initialEmail }) {
     const [email, setEmail] = useState(initialEmail || '');
     return (
@@ -53,7 +48,6 @@ export function EmailScreen({ t, onContinue, busy, error, initialEmail }) {
     );
 }
 
-// ---- Paso 2a (primer ingreso): contraseña temporal ----
 export function PasswordScreen({ t, email, onLogin, onBack, error, busy }) {
     const [password, setPassword] = useState('');
     return (
@@ -74,7 +68,6 @@ export function PasswordScreen({ t, email, onLogin, onBack, error, busy }) {
     );
 }
 
-// ---- Teclado numérico ----
 function PinPad({ onDigit, onDelete }) {
     const keys = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '', '0', 'del'];
     return (
@@ -95,7 +88,6 @@ function PinPad({ onDigit, onDelete }) {
     );
 }
 
-// ---- PIN: create | confirm | login (email + PIN) ----
 export function PinScreen({ t, mode, email, error, onComplete, onBio, onBack }) {
     const [pin, setPin] = useState('');
     const titles = { create: t('crearPin'), confirm: t('repetirPin'), login: t('ingresaPin') };

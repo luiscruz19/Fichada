@@ -1,8 +1,7 @@
 import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 
-// En nativo usamos SecureStore (cifrado). En web (que no lo soporta) caemos a localStorage,
-// solo para poder probar el flujo en el navegador.
+// SecureStore no existe en web: localStorage solo sirve para probar el flujo en el navegador.
 const isWeb = Platform.OS === 'web';
 
 export async function getItem(key) {

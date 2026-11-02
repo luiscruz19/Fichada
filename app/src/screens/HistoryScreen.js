@@ -14,7 +14,7 @@ function dayLabel(iso, lang) {
 
 export default function HistoryScreen({ t, lang, onBack }) {
     const [items, setItems] = useState(null);
-    const [correcting, setCorrecting] = useState(null); // shift a corregir
+    const [correcting, setCorrecting] = useState(null);
 
     const load = useCallback(async () => {
         try {
@@ -83,7 +83,6 @@ function Stat({ label, value, accent }) {
     );
 }
 
-// Horas sugeridas de salida: las típicas de cierre de jornada, para resolverlo de un toque.
 const SUGERIDOS = [13 * 60, 17 * 60, 18 * 60, 19 * 60, 20 * 60];
 
 function CorrectionModal({ t, shift, onClose, onSent }) {
@@ -94,12 +93,10 @@ function CorrectionModal({ t, shift, onClose, onSent }) {
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState(null);
 
-    // Arranca en una hora razonable para ESTA jornada y limpia el estado al cambiar de
-    // jornada: antes el modal se montaba una vez y arrastraba lo tipeado de la anterior.
+    // El modal queda montado: sin esto arrastra lo tipeado en la jornada anterior.
     useEffect(() => {
         if (!shift) return;
         const entrada = partesAr(shift.check_in).min;
-        // Propuesta: 8h después de la entrada, redondeado a 15 min y acotado al día.
         const propuesta = Math.min(23 * 60 + 45, Math.round((entrada + 8 * 60) / 15) * 15);
         setMinutos(propuesta % 1440);
         setDiaSiguiente(false);
@@ -111,7 +108,6 @@ function CorrectionModal({ t, shift, onClose, onSent }) {
         if (!shift) return;
         setBusy(true); setError(null);
         const iso = isoDesdeMinutosAr(shift.check_in, minutos, diaSiguiente);
-        // El motivo es opcional: si no escribió nada, no mandamos la clave.
         const payload = { type: 'edit', shift_id: shift.id, requested_check_out: iso };
         if (reason.trim()) payload.reason = reason.trim();
         try {
@@ -128,12 +124,10 @@ function CorrectionModal({ t, shift, onClose, onSent }) {
 
     return (
         <Modal visible={!!shift} transparent animationType="slide" onRequestClose={onClose}>
-            {/* En iOS hay que descontar el teclado a mano; en Android el Dialog del Modal ya
-                hace resize por su cuenta y sumarle padding lo descontaría dos veces. */}
+            {/* En Android el Dialog del Modal ya hace resize: sumarle padding lo descontaría dos veces. */}
             <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1 }}>
                 <Pressable onPress={onClose} style={{ flex: 1, backgroundColor: 'rgba(24,27,30,0.34)', justifyContent: 'flex-end' }}>
-                    {/* maxHeight + scroll: sin esto el contenido se desborda con el teclado
-                        abierto y el botón de enviar queda fuera de la pantalla. */}
+                    {/* Con el teclado abierto, sin maxHeight y scroll el botón de enviar queda fuera de pantalla. */}
                     <Pressable onPress={(e) => e.stopPropagation?.()}
                         style={{ backgroundColor: C.surface, borderTopLeftRadius: 24, borderTopRightRadius: 24, paddingTop: 10, maxHeight: '92%' }}>
                         <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: C.hairline2, alignSelf: 'center', marginBottom: 12 }} />

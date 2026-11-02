@@ -1,15 +1,9 @@
 import { getItem, setItem, deleteItem } from './storage';
 
-// La app habla SOLO con el api (auth queda interno; el login pega a POST /auth/login del api).
-// Base del backend: en builds EAS se inyecta EXPO_PUBLIC_API_URL en build-time (dominio real,
-// p.ej. https://fichada.sda.ovh/api) y GANA sobre cualquier default. Si no está (dev local con
-// Expo Go/emulador) cae al gateway de Traefik con Host-routing (Host: fichada-api.localhost).
 const PUBLIC_API = process.env.EXPO_PUBLIC_API_URL;
 const LOCAL_GATEWAY = 'http://10.0.2.2';
 const LOCAL_API_HOST = 'fichada-api.localhost';
-// Guardarraíl: si la variable no llegó (p.ej. un `eas update` publicado sin ella), en la app
-// instalada NO se puede caer al gateway local — dejaría a todos sin backend. Ahí manda el
-// dominio real; el fallback local queda solo para desarrollo.
+// Un `eas update` publicado sin la variable no puede caer al gateway local: dejaría a todos sin backend.
 const PROD_API = 'https://fichada.sda.ovh/api';
 const IS_DEV = typeof __DEV__ !== 'undefined' && __DEV__;
 const USE_LOCAL = !PUBLIC_API && IS_DEV;
@@ -36,22 +30,20 @@ export async function clearToken() {
     await deleteItem('fichada_token');
 }
 
-// El JWT del backend trae `exp` en segundos. Decodificamos el payload a mano: en Hermes
-// `atob` no está garantizado y no vale traerse una dependencia por diez líneas.
+// A mano: en Hermes atob no está garantizado y no vale una dependencia por diez líneas.
 const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
 function b64urlDecode(s) {
     let bits = 0, val = 0, out = '';
     for (const ch of s.replace(/-/g, '+').replace(/_/g, '/')) {
         const i = B64.indexOf(ch);
-        if (i < 0) continue; // padding y basura
+        if (i < 0) continue;
         val = (val << 6) | i; bits += 6;
         if (bits >= 8) { bits -= 8; out += String.fromCharCode((val >> bits) & 0xff); }
     }
     return out;
 }
 
-// ¿La sesión guardada ya venció? 30s de margen por desfasaje de reloj del teléfono.
-// Si el token es ilegible o no trae `exp`, devolvemos false y que decida el backend (401).
+// Token ilegible o sin exp: devuelve false y decide el backend con un 401.
 export function tokenVencido(tk) {
     try {
         const p = JSON.parse(b64urlDecode(String(tk).split('.')[1] || ''));
@@ -86,10 +78,8 @@ export async function login(email, password) {
     return json.user;
 }
 
-// ¿Ese email ya tiene PIN? (la app decide pedir PIN o contraseña)
 export const hasPin = (email) => req(`/auth/has-pin?email=${encodeURIComponent(email)}`);
 
-// Login por PIN (ingresos siguientes al primero).
 export async function loginPin(email, pin) {
     const res = await fetch(BASE + '/auth/login-pin', {
         method: 'POST',
@@ -102,7 +92,6 @@ export async function loginPin(email, pin) {
     return json.user;
 }
 
-// Setear el PIN tras el primer ingreso (requiere sesión).
 export const setPinRemote = (pin) => req('/auth/set-pin', { method: 'POST', body: JSON.stringify({ pin }) });
 
 export const getProfile = () => req('/employees/employee/me');
@@ -113,14 +102,11 @@ export const clockOut = (lat, lng, accuracy) => req('/shifts/employee/clock-out'
 export const startBreak = () => req('/shifts/employee/breaks/start', { method: 'POST', body: '{}' });
 export const endBreak = () => req('/shifts/employee/breaks/end', { method: 'POST', body: '{}' });
 
-// Dispositivo (device-binding) + push
 export const registerDevice = (payload) => req('/devices/employee/register', { method: 'POST', body: JSON.stringify(payload) });
 export const updatePushToken = (device_uuid, push_token) => req('/devices/employee/push-token', { method: 'PATCH', body: JSON.stringify({ device_uuid, push_token }) });
 
-// Solicitudes de corrección
 export const listMyRequests = () => req('/correction-requests/employee');
 export const createCorrectionRequest = (payload) => req('/correction-requests/employee', { method: 'POST', body: JSON.stringify(payload) });
 
-// Notificaciones
 export const listNotifications = () => req('/notifications/employee');
 export const markNotificationRead = (id) => req(`/notifications/employee/${id}/read`, { method: 'PATCH', body: '{}' });

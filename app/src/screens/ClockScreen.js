@@ -22,8 +22,6 @@ function resolveAction(estado, t) {
 function Header({ t, name, onMenu, onBell, notiCount }) {
     return (
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 10, paddingBottom: 2 }}>
-            {/* Todo el bloque abre el menú, con chevron para que se note que es tocable:
-                antes era un tap "a ciegas" sobre el avatar y no lo encontraba nadie. */}
             <Pressable onPress={onMenu} hitSlop={8} style={{ flexDirection: 'row', alignItems: 'center', gap: 11 }}>
                 <Avatar name={name} size={38} />
                 <View>
@@ -75,7 +73,6 @@ function SecondaryBtn({ label, Icon, onPress, tone }) {
 }
 
 function Summary({ t, workedMin, targetMin, pausaMin }) {
-    // El objetivo y la barra solo se muestran si el empleado tiene jornada configurada (dato real).
     const hasTarget = targetMin != null && targetMin > 0;
     const pct = hasTarget ? Math.min(100, (workedMin / targetMin) * 100) : 0;
     return (

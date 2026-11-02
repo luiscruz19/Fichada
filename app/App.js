@@ -19,11 +19,9 @@ import NotisSheet from './src/screens/NotisSheet';
 import MenuSheet from './src/screens/MenuSheet';
 import { EmailScreen, PasswordScreen, PinScreen } from './src/screens/AccessScreens';
 
-// Push: Expo Go (SDK 53+) removió las push de Android. Solo configuramos el handler
-// fuera de Expo Go (en el build EAS sí funcionan). Evita el error en consola de Expo Go.
+// Expo Go (SDK 53+) removió las push de Android: cargar expo-notifications ahí da error.
 const IS_EXPO_GO = Constants.executionEnvironment === 'storeClient';
 if (!IS_EXPO_GO) {
-    // require lazy: evita cargar expo-notifications (y su error) en Expo Go.
     const Notifications = require('expo-notifications');
     Notifications.setNotificationHandler({
         handleNotification: async () => ({ shouldShowAlert: true, shouldPlaySound: false, shouldSetBadge: false }),
@@ -34,8 +32,7 @@ const PIN_KEY = 'fichada_pin';
 const EMAIL_KEY = 'fichada_email';
 const LANG = 'es';
 
-// Pantalla de espera mientras se verifica la sesión. Comparte el fondo con el splash
-// (#fafaf9 en app.json), así el relevo splash → loader no se ve como un salto.
+// Mismo fondo que el splash de app.json: el relevo no se ve como un salto.
 function Loader() {
     return (
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: C.bg }}>
@@ -44,7 +41,6 @@ function Loader() {
     );
 }
 
-// ---- live clock ----
 function useNow(ms = 1000) {
     const [now, setNow] = useState(() => new Date());
     useEffect(() => {
@@ -54,7 +50,6 @@ function useNow(ms = 1000) {
     return now;
 }
 
-// ---- jornada desde el shift ----
 function shiftToEvents(shift) {
     if (!shift) return [];
     const ev = [{ type: 'in', t: new Date(shift.check_in) }];
@@ -108,15 +103,12 @@ export default function App() {
     const [shift, setShift] = useState(null);
     const [estado, setEstado] = useState('fuera');
     const [name, setName] = useState('Empleado');
-    const [targetMin, setTargetMin] = useState(null); // se llena con el target_hours real del perfil
+    const [targetMin, setTargetMin] = useState(null);
     const [view, setView] = useState('clock'); // clock | history
     const [notis, setNotis] = useState([]);
     const [notisOpen, setNotisOpen] = useState(false);
     const [menuOpen, setMenuOpen] = useState(false);
 
-    // Lleva a la pantalla de ingreso "correcta": si este teléfono ya tiene una cuenta
-    // con PIN, va DIRECTO a pedir el PIN (no vuelve a pedir el email). Solo muestra la
-    // pantalla de email en el primer uso (sin email guardado) o si no se puede resolver.
     const goToLogin = useCallback(async () => {
         const last = await getItem(EMAIL_KEY);
         if (!last) { setSession('emailEntry'); return; }
@@ -125,9 +117,7 @@ export default function App() {
         const hw = await LocalAuthentication.hasHardwareAsync().catch(() => false);
         const enrolled = await LocalAuthentication.isEnrolledAsync().catch(() => false);
         setCanBio(!!localPin && hw && enrolled);
-        // PIN ya configurado en este teléfono → directo al PIN (offline-friendly).
         if (localPin) { setSession('loginPin'); return; }
-        // Sin PIN local: preguntamos al servidor si la cuenta ya tiene PIN.
         try {
             const res = await hasPin(last);
             setSession(res?.has_pin ? 'loginPin' : 'loginPassword');
@@ -136,10 +126,7 @@ export default function App() {
         }
     }, []);
 
-    // boot: que HAYA un token guardado no quiere decir que sirva (la sesión dura 8h).
-    // Primero se descarta local por `exp` (sin red) y recién después se confirma contra el
-    // backend. Pasamos a 'active' solo con la jornada ya en mano: así la pantalla principal
-    // no aparece antes del login ni con datos que no son los del empleado.
+    // Un token guardado puede estar vencido: la pantalla principal espera la confirmación del backend.
     const bootCargoStatus = useRef(false);
     useEffect(() => {
         (async () => {
@@ -162,15 +149,12 @@ export default function App() {
                     await goToLogin();
                     return;
                 }
-                // Sin conexión: el token todavía es válido por fecha, así que lo dejamos
-                // entrar en vez de encerrarlo en el loader. La jornada se carga al reintentar.
+                // Sin conexión y con el token vigente se deja entrar: la jornada se carga al reintentar.
                 setSession('active');
             }
         })();
     }, [goToLogin]);
 
-    // Al llegar a la pantalla de PIN con biometría disponible, la disparamos sola
-    // (como las apps de banco): si la cancelás, queda el teclado de PIN.
     const bioTried = useRef(false);
     useEffect(() => {
         if (session === 'loginPin' && canBio && !IS_WEB && !bioTried.current) {
@@ -187,12 +171,11 @@ export default function App() {
             setEstado(STATUS_MAP[data.status] || 'fuera');
             setShift(data.shift || null);
         } catch (e) {
-            // 403 = empleado dado de baja o dispositivo revocado: también vuelve al ingreso.
+            // 403: empleado dado de baja.
             if (e.status === 401 || e.status === 403) { await clearToken(); await goToLogin(); }
         }
     }, [goToLogin]);
 
-    // Perfil real del empleado (nombre + objetivo de jornada), desde el backend.
     const loadProfile = useCallback(async () => {
         try {
             const res = await getProfile();
@@ -211,14 +194,12 @@ export default function App() {
 
     useEffect(() => {
         if (session !== 'active') return;
-        // El boot ya trajo el estado de la jornada: no lo pedimos dos veces al arrancar.
         if (bootCargoStatus.current) bootCargoStatus.current = false;
         else refresh();
         loadProfile(); syncDevice(); loadNotis();
     }, [session, refresh, loadProfile, loadNotis]);
 
-    // Al volver a la app buscamos versión nueva y, si no hay jornada abierta, la aplicamos
-    // sola. Sin esto el default nativo la deja para el arranque en frío siguiente.
+    // Sin esto, el default nativo aplica la versión nueva recién en el siguiente arranque en frío.
     useEffect(() => {
         if (session !== 'active') return;
         const sub = AppState.addEventListener('change', (s) => {
@@ -234,7 +215,6 @@ export default function App() {
         await loadNotis();
     }
 
-    // Paso 1: email → ¿tiene PIN? → pide PIN, o pide contraseña (primer ingreso).
     async function onContinueEmail(em) {
         const e = String(em || '').trim().toLowerCase();
         if (!e) { setAuthError('Ingresá tu email'); return; }
@@ -258,7 +238,6 @@ export default function App() {
         }
     }
 
-    // Paso 2a: primer ingreso con contraseña temporal → crear PIN.
     async function onLoginPassword(password) {
         setAuthError(null); setBusy(true);
         try {
@@ -277,8 +256,9 @@ export default function App() {
             if (value !== pinDraft) { setAuthError(t('pinIncorrecto')); setSession('createPin'); return; }
             setBusy(true);
             try {
-                await setPinRemote(value);     // guarda el PIN en la base
-                await setItem(PIN_KEY, value); // y local, para la biometría en este teléfono
+                await setPinRemote(value);
+                // Copia local para entrar con biometría en este teléfono.
+                await setItem(PIN_KEY, value);
                 setAuthError(null); setSession('active');
             } catch {
                 setAuthError('No se pudo guardar el PIN'); setSession('createPin');
@@ -286,8 +266,8 @@ export default function App() {
         } else if (mode === 'login') {
             setBusy(true);
             try {
-                await loginPin(email, value);  // login con email + PIN
-                await setItem(PIN_KEY, value); // recuerda el PIN local (biometría)
+                await loginPin(email, value);
+                await setItem(PIN_KEY, value);
                 setAuthError(null); setSession('active');
             } catch (e) {
                 setAuthError(e.message || t('pinIncorrecto'));
@@ -295,7 +275,6 @@ export default function App() {
         }
     }
 
-    // Biometría: usa el PIN guardado localmente para entrar sin tipearlo.
     async function onBio() {
         try {
             const r = await LocalAuthentication.authenticateAsync({ promptMessage: 'Ingresar a Fichada' });
@@ -324,8 +303,7 @@ export default function App() {
             }
             await refresh();
         } catch (e) {
-            // Si la sesión venció justo al fichar, al ingreso: un "no se pudo" lo deja
-            // probando de nuevo contra un token muerto.
+            // Reintentar con un token vencido nunca funcionaría: vuelve al ingreso.
             if (e.status === 401 || e.status === 403) {
                 await clearToken(); await goToLogin(); return;
             }
@@ -338,8 +316,7 @@ export default function App() {
         }
     }
 
-    // Cerrar sesión: se olvida el token pero NO el email, así el próximo ingreso
-    // es solo el PIN.
+    // Se conserva el email: el próximo ingreso es solo el PIN.
     async function onLogout() {
         setMenuOpen(false);
         await clearToken();
@@ -347,10 +324,8 @@ export default function App() {
         await goToLogin();
     }
 
-    // ---- render ----
     if (session === 'boot') return <Loader />;
 
-    // ¿Hay una jornada abierta de un día anterior? → bloquea hasta cerrarla.
     const prevDayOpen = (() => {
         if (!shift || shift.status === 'closed' || !shift.check_in) return false;
         const ci = new Date(shift.check_in);
@@ -370,8 +345,7 @@ export default function App() {
     } else if (session === 'loginPin') {
         content = <PinScreen t={t} mode="login" email={email} error={authError} onComplete={(p) => onPin('login', p)} onBio={(canBio && !IS_WEB) ? onBio : undefined} onBack={() => { setAuthError(null); setSession('emailEntry'); }} />;
     } else if (session !== 'active') {
-        // Cualquier estado que no sea 'active' muestra el loader. Si mañana se agrega un
-        // estado nuevo, no puede filtrarse la pantalla principal por descarte.
+        // Un estado nuevo no puede mostrar la pantalla principal por descarte.
         content = <Loader />;
     } else if (view === 'history') {
         content = <HistoryScreen t={t} lang={LANG} onBack={() => setView('clock')} />;
