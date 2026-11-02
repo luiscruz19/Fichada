@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import { Sequelize, DataTypes } from 'sequelize';
 
@@ -38,7 +39,7 @@ const BCRYPT_ROUNDS = 12;
 
 function generateToken(length = 100) {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    return Array.from({ length }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+    return Array.from({ length }, () => chars[randomInt(chars.length)]).join('');
 }
 
 async function run() {
