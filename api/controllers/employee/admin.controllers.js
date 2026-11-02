@@ -173,6 +173,7 @@ export async function killSwitch(req, res) {
             { status: 'revoked', revoked_at: new Date(), revoked_by: req.employee?.id ?? null },
             { where: { employee_id: employee.id, status: 'active' }, transaction }
         );
+        await employee.update({ tokens_valid_after: new Date() }, { transaction });
 
         await transaction.commit();
         return res.status(200).json(successMessage({

@@ -46,6 +46,11 @@ const Employee = sequelize.define('employees', {
             },
         },
     },
+    tokens_valid_after: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        comment: 'Los JWT emitidos antes de esta fecha quedan revocados'
+    },
     expected_check_in: {
         type: DataTypes.TIME,
         allowNull: true,
