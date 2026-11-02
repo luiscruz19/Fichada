@@ -2,9 +2,7 @@ import { secondsToHHMM } from '@/lib/format';
 
 export type BarDatum = { key: string; label: string; seconds: number };
 
-// Gráfico de barras de horas por día. Usa alturas en PÍXELES (no %) para que las
-// barras se vean siempre — el bug anterior era height:% contra un contenedor sin
-// altura definida, que colapsaba las barras a líneas.
+// Alturas en píxeles: con % contra un contenedor sin altura definida, las barras colapsan.
 export function BarChart({ data, height = 128 }: { data: BarDatum[]; height?: number }) {
     const max = Math.max(1, ...data.map((d) => d.seconds));
     const gap = data.length > 31 ? 3 : 6;

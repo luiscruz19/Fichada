@@ -1,6 +1,4 @@
-// Rango de fechas para reportes/métricas. Las fechas se manejan como claves locales
-// (YYYY-MM-DD) en hora de Argentina (UTC−3) y se convierten a instantes UTC para el api.
-
+// Claves de fecha YYYY-MM-DD en hora de Argentina (UTC−3); el api recibe instantes UTC.
 const OFFSET_H = -3;
 const pad = (n: number) => String(n).padStart(2, '0');
 const MES = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
@@ -36,7 +34,6 @@ export function fmtKeyLong(key: string): string {
     return `${d} ${MES[m - 1]} ${y}`;
 }
 
-// Cantidad de días (inclusive) entre dos claves.
 export function daysBetween(fromKey: string, toKey: string): number {
     const [fy, fm, fd] = fromKey.split('-').map(Number);
     const [ty, tm, td] = toKey.split('-').map(Number);
@@ -54,7 +51,6 @@ export const PRESETS: { key: PresetKey; label: string }[] = [
     { key: 'all', label: 'Todo' },
 ];
 
-// Rango {from,to} de un preset, relativo a hoy (AR). 'all' → sin límites.
 export function presetRange(preset: PresetKey): { fromKey: string | null; toKey: string | null } {
     const today = todayKeyAR();
     switch (preset) {
@@ -71,8 +67,6 @@ export type ResolvedRange = { fromKey: string | null; toKey: string | null; labe
 
 const isKey = (s?: string) => !!s && /^\d{4}-\d{2}-\d{2}$/.test(s);
 
-// Lee el rango desde los searchParams del server component. Si no hay from/to ni
-// preset=all, aplica `defaultPreset` (p.ej. 'month' → arranca en "Este mes").
 export function resolveRange(sp: { from?: string; to?: string; preset?: string }, defaultPreset: PresetKey = 'all'): ResolvedRange {
     let fromKey = isKey(sp.from) ? sp.from! : null;
     let toKey = isKey(sp.to) ? sp.to! : null;
@@ -87,8 +81,7 @@ export function resolveRange(sp: { from?: string; to?: string; preset?: string }
     return { fromKey, toKey, label };
 }
 
-// Convierte el rango (claves locales AR) a query string para el api: filtra por check_in
-// entre el 00:00 del día `from` y el 23:59:59.999 del día `to`, ambos en hora AR.
+// De 00:00 de `from` a 23:59:59.999 de `to` en hora de Argentina, expresado en UTC.
 export function rangeToApiQuery(fromKey: string | null, toKey: string | null, extra?: Record<string, string>): string {
     const params = new URLSearchParams(extra || {});
     if (fromKey) params.set('from', `${fromKey}T03:00:00.000Z`);

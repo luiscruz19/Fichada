@@ -11,7 +11,6 @@ function punctColor(pct: number | null): string {
     return pct >= 80 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--danger)';
 }
 
-// Tabla por persona con filas clickeables → reporte individual del empleado.
 export function ReportesPersonTable({ rows, range }: { rows: PersonMetric[]; range?: { from: string | null; to: string | null } }) {
     const router = useRouter();
 

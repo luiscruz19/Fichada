@@ -22,7 +22,6 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
     const [mode, setMode] = useState<'pins' | 'heat'>('pins');
     const [status, setStatus] = useState<'loading' | 'ready' | 'nokey' | 'error'>('loading');
 
-    // Inicializa el mapa una vez.
     useEffect(() => {
         let cancelled = false;
         (async () => {
@@ -44,7 +43,6 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
         return () => { cancelled = true; };
     }, []);
 
-    // (Re)dibuja según filtro/modo/puntos.
     useEffect(() => {
         if (status !== 'ready' || !mapRef.current) return;
         const g = (window as any).google;
@@ -60,9 +58,7 @@ export function MapaClient({ points }: { points: MapPoint[] }) {
         visible.forEach((p) => bounds.extend(new g.maps.LatLng(p.lat, p.lng)));
 
         if (mode === 'heat') {
-            // Mapa de densidad propio: Google eliminó HeatmapLayer en la versión 3.65 de la
-            // API. Agrupamos las fichadas en celdas de ~110 m (3 decimales) y dibujamos un
-            // círculo por zona, con tamaño y color según cuántas fichadas cayeron ahí.
+            // Google eliminó HeatmapLayer en la versión 3.65: se agrupa en celdas de ~110 m (3 decimales).
             const celdas = new Map<string, { lat: number; lng: number; n: number }>();
             for (const p of visible) {
                 const k = `${p.lat.toFixed(3)},${p.lng.toFixed(3)}`;

@@ -4,9 +4,6 @@ import { useState } from 'react';
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { PRESETS, presetRange, type PresetKey } from '@/lib/daterange';
 
-// Selector de rango de fechas (desde/hasta + presets) para reportes/métricas/historial.
-// `defaultPreset` es el rango que se aplica cuando no hay parámetros en la URL (p.ej.
-// 'month' para arrancar en "Este mes"). "Todo" navega con ?preset=all.
 export function DateRangePicker({ defaultPreset = 'all' }: { defaultPreset?: PresetKey }) {
     const router = useRouter();
     const pathname = usePathname();
@@ -15,7 +12,6 @@ export function DateRangePicker({ defaultPreset = 'all' }: { defaultPreset?: Pre
     const curTo = sp.get('to') || '';
     const curPreset = sp.get('preset') || '';
 
-    // Rango efectivo (considerando el default cuando no hay params) para el highlight.
     let effFrom = curFrom, effTo = curTo, isAll = curPreset === 'all';
     if (!curFrom && !curTo && !curPreset) {
         if (defaultPreset === 'all') isAll = true;

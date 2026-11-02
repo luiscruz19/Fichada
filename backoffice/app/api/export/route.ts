@@ -1,6 +1,5 @@
 import { apiFetch } from '@/lib/api';
 
-// Proxy de descarga: agrega el JWT del admin (cookie) al export del api.
 export async function GET(req: Request) {
     const qs = new URL(req.url).search;
     const res = await apiFetch(`/shifts/admin/export${qs}`);
