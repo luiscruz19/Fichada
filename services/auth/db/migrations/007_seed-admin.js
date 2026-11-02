@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
 // Only runs if ADMIN_EMAIL is defined — safe to skip in projects that don't need a seeded admin
@@ -28,7 +29,7 @@ export default {
 
         const hashed = await bcrypt.hash(password, 12);
         const uuid = Array.from({ length: 100 }, () =>
-            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 62)]
+            'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[randomInt(62)]
         ).join('');
 
         await queryInterface.bulkInsert('users', [{

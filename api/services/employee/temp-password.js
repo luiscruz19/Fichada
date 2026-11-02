@@ -1,9 +1,11 @@
+import { randomInt } from 'node:crypto';
+
 const LOWERCASE = 'abcdefghijkmnpqrstuvwxyz';
 const UPPERCASE = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
 const DIGITS = '23456789';
 const LOWERCASE_COUNT = 5;
 
-const pick = (chars) => chars[Math.floor(Math.random() * chars.length)];
+const pick = (chars) => chars[randomInt(chars.length)];
 
 // Cumple la política de auth: mayúscula, minúscula, dígito y carácter especial.
 export default function genTempPassword() {
