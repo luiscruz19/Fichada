@@ -14,7 +14,7 @@ help:
 	@echo "  make app-install Instala dependencias de la app mobile (Expo)"
 	@echo "  make app         Arranca la app del empleado (Expo / Metro)"
 	@echo ""
-	@echo "Acceso: backoffice http://fichada.localhost · api http://fichada-api.localhost · auth http://fichada-auth.localhost"
+	@echo "Acceso: backoffice http://fichada.localhost/backoffice · api http://fichada-api.localhost · auth http://fichada-auth.localhost"
 	@echo "Admin demo: admin@fichada.com / CAMBIAR_ANTES_DE_USAR"
 	@echo "Requiere /opt/shared levantado (red net-shared + mysql_db + traefik)."
 
@@ -60,7 +60,7 @@ restart:
 build:
 	docker compose build
 
-# --- App mobile (Expo) — corre local, no en Docker (necesita Metro + device/emulador) ---
+# La app corre local, no en Docker: necesita Metro y un dispositivo o emulador.
 app-install:
 	cd app && npm install
 

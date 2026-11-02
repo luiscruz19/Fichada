@@ -1,18 +1,14 @@
 #!/bin/bash
 set -euo pipefail
-# ════════════════════════════════════════════════════════════════════════════
-#  FICHADA · deploy.sh — build + push (GHCR) + pull/up en el server.
-#  Calco del deploy.sh de mundial/novitas (acá 4 imágenes: auth, mailer, api, backoffice).
+# Construye y publica las 4 imágenes en GHCR y las levanta en el server por SSH.
+# Uso: ./deploy.sh [test]
 #
-#  Uso:  ./deploy.sh [test]
-#
-#  Variables (en .env.deploy.<env>):
-#    DEPLOY_USER, DEPLOY_SERVER, DEPLOY_PORT, DEPLOY_PATH, DEPLOY_TAG
-#    DEPLOY_SSH_KEY            — clave privada para SSH (default ~/.ssh/id_ed25519)
-#    GITHUB_REGISTRY_USER      — usuario de GHCR (default luiscruz19)
-#    GITHUB_REGISTRY_TOKEN     — PAT con write:packages (suele venir del entorno/~/.bashrc)
-#    DEPLOY_RUN_SEED           — "true" para correr el seed (admin + ajustes) tras el up
-# ════════════════════════════════════════════════════════════════════════════
+# Variables (en .env.deploy.<env>):
+#   DEPLOY_USER, DEPLOY_SERVER, DEPLOY_PORT, DEPLOY_PATH, DEPLOY_TAG
+#   DEPLOY_SSH_KEY            clave privada para SSH (default ~/.ssh/id_ed25519)
+#   GITHUB_REGISTRY_USER      usuario de GHCR
+#   GITHUB_REGISTRY_TOKEN     PAT con write:packages
+#   DEPLOY_RUN_SEED           "true" para correr el seed después del up
 
 ENVIRONMENT="${1:-test}"
 ENV_FILE=".env.deploy.${ENVIRONMENT}"
@@ -37,7 +33,6 @@ SCP="scp -i $SSH_KEY -P $DEPLOY_PORT -o StrictHostKeyChecking=accept-new"
 
 echo "── FICHADA deploy ($ENVIRONMENT) · TAG=$TAG → $DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH ──"
 
-# 1) Build + push de las imágenes a GHCR (nada se compila en el server).
 echo "→ login GHCR (local)"
 echo "$REG_TOKEN" | docker login ghcr.io -u "$REG_USER" --password-stdin
 echo "→ build"
@@ -45,12 +40,11 @@ docker compose -f docker-compose.prod.yml build
 echo "→ push"
 docker compose -f docker-compose.prod.yml push
 
-# 2) Sincronizar el compose de runtime al server (el bloque build: es inerte en pull/up).
 echo "→ copiar docker-compose.prod.yml → $DEPLOY_PATH/docker-compose.yml"
 $SSH "$DEPLOY_USER@$DEPLOY_SERVER" "mkdir -p '$DEPLOY_PATH'"
 $SCP docker-compose.prod.yml "$DEPLOY_USER@$DEPLOY_SERVER:$DEPLOY_PATH/docker-compose.yml"
 
-# 3) En el server: login, pull, up. (heredoc no entrecomillado: TAG/credenciales se expanden acá)
+# Heredoc sin comillas: TAG y las credenciales se expanden en local.
 echo "→ pull + up en el server"
 $SSH "$DEPLOY_USER@$DEPLOY_SERVER" bash -s <<EOF
 set -e
@@ -69,4 +63,4 @@ if docker compose ps | grep -E "(Exit|unhealthy)" >/dev/null 2>&1; then
 fi
 EOF
 
-echo "✓ Deploy completado (TAG=$TAG) → https://fichada.sda.ovh · panel https://fichada.sda.ovh/backoffice"
+echo "✓ Deploy completado (TAG=$TAG)"

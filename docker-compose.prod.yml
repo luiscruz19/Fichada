@@ -1,16 +1,5 @@
-# ════════════════════════════════════════════════════════════════════════════
-#  FICHADA · PROD (test server) — backend completo. Build+push + runtime.
-#  - `deploy.sh test` lo usa para BUILD + PUSH de las imágenes a GHCR.
-#  - En el server se usa el mismo archivo para PULL + UP (el bloque build: es inerte
-#    al hacer pull/up con las imágenes ya publicadas; nada se compila en el server).
-#  Infra compartida (Traefik, mysql_db) provista por /opt/shared en la red externa
-#  net-shared. Ruteo (todo bajo fichada.sda.ovh):
-#    - api        → /api        (stripprefix; lo consume la app → EXPO_PUBLIC_API_URL=.../api)
-#    - backoffice → /backoffice (Next con basePath /backoffice; sus rutas /api/* quedan
-#                                bajo /backoffice/api/*, sin chocar con el api de dominio)
-#    - auth/mailer → internos (sin Traefik). El mailer NO usa DB.
-#  Variables runtime en .env (no versionado).
-# ════════════════════════════════════════════════════════════════════════════
+# deploy.sh lo usa para construir y publicar las imágenes; en el server, para pull + up.
+# Traefik y mysql_db los provee la infra compartida, en la red externa net-shared.
 services:
   fichada_auth:
     build:
