@@ -15,10 +15,6 @@ function genTempPassword() {
     return s + '!';
 }
 
-/**
- * Regenera la contraseña del empleado en auth (endpoint interno protegido por SECRET_KEY)
- * y devuelve la nueva temporal para que el admin la comparta.
- */
 export default async function resetAccess(userId) {
     const tempPassword = genTempPassword();
     const res = await fetch(`${AUTH_API_URL}/set-password`, {

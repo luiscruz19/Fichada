@@ -9,7 +9,6 @@ const authBasic = 'Basic ' + Buffer.from(`${AUTHORIZATION.USER}:${AUTHORIZATION.
 const MAX_ATTEMPTS = 5;
 const LOCK_MINUTES = 5;
 
-// Obtiene un JWT del servicio auth para un user verificado (endpoint interno protegido por SECRET_KEY).
 async function generateAuthToken(userId) {
     if (!userId) return null;
     try {
@@ -23,7 +22,6 @@ async function generateAuthToken(userId) {
     }
 }
 
-// POST /auth/set-pin (requiere JWT del empleado) — guarda el PIN hasheado en su Employee.
 export async function setPin(req, res) {
     try {
         const pin = String(req.body?.pin || '');
@@ -38,7 +36,6 @@ export async function setPin(req, res) {
     }
 }
 
-// GET /auth/has-pin?email= — ¿ese empleado ya tiene PIN? (la app decide pedir PIN o contraseña).
 export async function hasPin(req, res) {
     try {
         const email = String(req.query?.email || '').toLowerCase().trim();
@@ -49,7 +46,6 @@ export async function hasPin(req, res) {
     }
 }
 
-// POST /auth/login-pin {email, pin} — login por PIN; genera el JWT vía auth. Bloquea tras MAX_ATTEMPTS.
 export async function loginPin(req, res) {
     try {
         const email = String(req.body?.email || '').toLowerCase().trim();

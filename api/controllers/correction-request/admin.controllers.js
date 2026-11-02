@@ -7,7 +7,6 @@ import applyCorrection from '../../services/correction-request/apply-correction.
 
 const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email'];
 
-// ==================== LISTAR SOLICITUDES ====================
 export async function listRequests(req, res) {
     try {
         const { status, employee_id } = req.query;
@@ -31,7 +30,6 @@ export async function listRequests(req, res) {
     }
 }
 
-// ==================== APROBAR ====================
 export async function approveRequest(req, res) {
     const transaction = await sequelize.transaction();
     try {
@@ -45,8 +43,7 @@ export async function approveRequest(req, res) {
             return res.status(409).json(errorMessage({ message: 'La solicitud ya fue resuelta.' }));
         }
 
-        // Aplica el cambio a la jornada y deja la auditoría, en la misma transacción.
-        // El admin puede aprobar con una hora distinta a la pedida (la que ve en el drawer).
+        // El admin puede aprobar con una hora distinta a la pedida.
         const ajustes = {
             check_in: req.body?.requested_check_in ?? null,
             check_out: req.body?.requested_check_out ?? null,
@@ -70,7 +67,6 @@ export async function approveRequest(req, res) {
     }
 }
 
-// ==================== RECHAZAR ====================
 export async function rejectRequest(req, res) {
     try {
         const request = await CorrectionRequest.findByPk(req.params.id);

@@ -4,15 +4,6 @@ import Employee from '../models/Employee.js';
 import Setting from '../models/Setting.js';
 import CONFIG from '../config/config.js';
 
-/**
- * Seed idempotente: deja el sistema listo para usar.
- *  1. Resuelve el usuario admin contra el servicio auth (por email) para obtener su user_id.
- *  2. Crea/asegura el Employee admin vinculado a ese user_id.
- *  3. Asegura la fila única de ajustes globales con los defaults.
- *
- * Uso (dentro del contenedor): node db/seed.js   ·   o `make seed`.
- */
-
 async function resolveAuthUserId(email) {
     const { AUTH_API_URL, AUTHORIZATION } = CONFIG;
     if (!AUTH_API_URL) throw new Error('AUTH_API_URL no está configurado');
@@ -37,7 +28,6 @@ async function resolveAuthUserId(email) {
 
         const { ADMIN } = CONFIG;
 
-        // 1 + 2) Employee admin vinculado al user de auth
         const userId = await resolveAuthUserId(ADMIN.EMAIL);
         const [employee, created] = await Employee.findOrCreate({
             where: { email: ADMIN.EMAIL },
@@ -54,7 +44,6 @@ async function resolveAuthUserId(email) {
         }
         console.info(`✓ Employee admin ${created ? 'creado' : 'asegurado'} (id=${employee.id}, user_id=${userId})`);
 
-        // 3) Ajustes globales (fila única)
         const settings = await Setting.findOne({ order: [['id', 'ASC']] });
         if (!settings) {
             await Setting.create({});

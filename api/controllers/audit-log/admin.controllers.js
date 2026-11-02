@@ -1,7 +1,6 @@
 import AuditLog from '../../models/AuditLog.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
-// ==================== LISTAR AUDITORÍA (solo lectura) ====================
 export async function listAuditLogs(req, res) {
     try {
         const { entity, entity_id, action } = req.query;
@@ -24,7 +23,6 @@ export async function listAuditLogs(req, res) {
     }
 }
 
-// ==================== OBTENER UN REGISTRO ====================
 export async function getAuditLog(req, res) {
     try {
         const log = await AuditLog.findByPk(req.params.id);

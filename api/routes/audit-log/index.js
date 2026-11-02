@@ -5,7 +5,6 @@ import admin from './admin.routes.js';
 
 const auditLog = Router();
 
-// Auditoría: solo lectura para administración.
 auditLog.use('/admin', [validateToken, adminPermission], admin);
 
 export default auditLog;

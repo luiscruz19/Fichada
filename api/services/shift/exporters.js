@@ -2,7 +2,6 @@ import ExcelJS from 'exceljs';
 import PDFDocument from 'pdfkit';
 import { REPORT_COLUMNS } from './build-report-rows.js';
 
-// ─── CSV (nativo, sin dependencias) ──────────────────────────────────────────
 function csvEscape(value) {
     const s = String(value ?? '');
     return /[",\n;]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
@@ -15,7 +14,6 @@ export function toCsv(rows) {
     return '﻿' + [header, ...lines].join('\n');
 }
 
-// ─── Excel (exceljs) ─────────────────────────────────────────────────────────
 export async function toXlsx(rows) {
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('Jornadas');
@@ -25,7 +23,6 @@ export async function toXlsx(rows) {
     return wb.xlsx.writeBuffer();
 }
 
-// ─── PDF (pdfkit) ────────────────────────────────────────────────────────────
 export function toPdf(rows, { title = 'Reporte de jornadas' } = {}) {
     return new Promise((resolve, reject) => {
         const doc = new PDFDocument({ size: 'A4', layout: 'landscape', margin: 30 });

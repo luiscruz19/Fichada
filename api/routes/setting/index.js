@@ -5,7 +5,6 @@ import admin from './admin.routes.js';
 
 const setting = Router();
 
-// Ajustes globales: solo administración.
 setting.use('/admin', [validateToken, adminPermission], admin);
 
 export default setting;

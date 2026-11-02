@@ -3,8 +3,6 @@ import Shift from '../../models/Shift.js';
 import Setting from '../../models/Setting.js';
 import { successMessage, errorMessage } from '../../utils/messages.js';
 
-// ==================== CREAR SOLICITUD ====================
-// El empleado solicita: 'edit' (corregir una jornada existente) o 'add' (alta de jornada faltante).
 export async function createRequest(req, res) {
     try {
         const settings = await Setting.findOne({ order: [['id', 'ASC']] });
@@ -25,9 +23,7 @@ export async function createRequest(req, res) {
             if (requested_check_in == null && requested_check_out == null) {
                 return res.status(400).json(errorMessage({ message: 'Indicá al menos un horario a corregir.' }));
             }
-            // Una salida anterior a la entrada no da error en ningún lado: computeWorkedSeconds
-            // hace Math.max(0, …) y la jornada queda en 0 segundos, en silencio. Caso típico:
-            // turno noche (entró 22:00, salió 06:00) sin marcar que fue el día siguiente.
+            // Sin este control la jornada quedaría en 0 segundos sin error. Caso típico: turno noche.
             if (requested_check_out != null && new Date(requested_check_out) <= new Date(shift.check_in)) {
                 return res.status(400).json(errorMessage({
                     message: 'La salida no puede ser anterior o igual a la entrada de esa jornada.'
@@ -45,8 +41,7 @@ export async function createRequest(req, res) {
             type,
             requested_check_in: requested_check_in ?? null,
             requested_check_out: requested_check_out ?? null,
-            // Normalizamos: '', '   ' y la ausencia del campo se guardan todos como NULL,
-            // así el panel y las consultas tienen un solo caso de "sin motivo".
+            // Vacío, espacios y campo ausente van a NULL: un solo caso de "sin motivo".
             reason: typeof reason === 'string' && reason.trim() ? reason.trim() : null,
             status: 'pending',
         });
@@ -59,7 +54,6 @@ export async function createRequest(req, res) {
     }
 }
 
-// ==================== MIS SOLICITUDES ====================
 export async function listMyRequests(req, res) {
     try {
         const { status } = req.query;

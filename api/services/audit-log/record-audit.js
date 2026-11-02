@@ -1,9 +1,6 @@
 import AuditLog from '../../models/AuditLog.js';
 
-/**
- * Registra una entrada de auditoría (append-only). Pensado para usarse dentro de la
- * misma transacción que la operación auditada: pasar { transaction } en options.
- */
+// Pasar { transaction } en options: el registro va en la misma transacción que lo auditado.
 export default async function recordAudit({
     entity,
     entity_id = null,

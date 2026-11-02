@@ -2,11 +2,7 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Sede. Catálogo de referencia configurable desde el backoffice (para ubicar en el mapa).
- * En el MVP NO se asignan empleados a una sede ni se valida zona (sin geocerca).
- * radius_meters queda preparado para una eventual geocerca en Fase 2, sin uso actual.
- */
+// Catálogo de referencia: no asigna empleados ni valida zona; radius_meters todavía no se usa.
 const Site = sequelize.define('sites', {
     id: {
         type: DataTypes.INTEGER,

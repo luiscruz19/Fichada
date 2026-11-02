@@ -31,22 +31,17 @@ function inviteHtml({ firstName, email, tempPassword }) {
     </div>`;
 }
 
-/**
- * Crea el acceso del empleado en auth (usuario verificado) e intenta enviar la invitación
- * por mailer (best-effort: si no hay SMTP, no bloquea). Devuelve el user_id y la contraseña
- * temporal para que el admin la comparta si el mail no se envió.
- */
+// Si el mail falla el alta sigue: el admin recibe la contraseña temporal para compartirla.
 export default async function inviteEmployee({ first_name, last_name, email }) {
     const tempPassword = genTempPassword();
 
-    // 1) Crear usuario en auth (sin el welcome genérico de auth; el mail lo manda este flujo).
+    // welcome_email: 0 porque la invitación la manda este flujo, no auth.
     const signupRes = await fetch(`${AUTH_API_URL}/auth/signup`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: authBasic },
         body: JSON.stringify({ email, password: tempPassword, verify_password: tempPassword, welcome_email: 0 }),
     });
     const signupJson = await signupRes.json().catch(() => null);
-    // successMessage hace spread de `extra` al top level → { status, message, user: {...} }
     const userId = signupJson?.user?.id;
     const rememberToken = signupJson?.user?.remember_token;
     if (!signupRes.ok || !userId) {
@@ -55,7 +50,6 @@ export default async function inviteEmployee({ first_name, last_name, email }) {
         throw e;
     }
 
-    // 2) Verificar la cuenta para que pueda iniciar sesión de inmediato.
     if (rememberToken) {
         await fetch(`${AUTH_API_URL}/auth/validate-account`, {
             method: 'POST',
@@ -64,7 +58,6 @@ export default async function inviteEmployee({ first_name, last_name, email }) {
         }).catch(() => { });
     }
 
-    // 3) Enviar invitación por mailer (best-effort).
     let emailSent = false;
     try {
         const res = await fetch(`${MAILER_API_URL}/send-email`, {

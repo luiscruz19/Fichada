@@ -5,7 +5,6 @@ import admin from './admin.routes.js';
 
 const site = Router();
 
-// Catálogo de sedes: solo administración.
 site.use('/admin', [validateToken, adminPermission], admin);
 
 export default site;

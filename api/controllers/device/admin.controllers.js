@@ -4,7 +4,6 @@ import { successMessage, errorMessage } from '../../utils/messages.js';
 
 const EMPLOYEE_ATTRS = ['id', 'first_name', 'last_name', 'email'];
 
-// ==================== LISTAR DISPOSITIVOS ====================
 export async function listDevices(req, res) {
     try {
         const { employee_id, status } = req.query;
@@ -25,7 +24,6 @@ export async function listDevices(req, res) {
     }
 }
 
-// ==================== REVOCAR (kill switch del dispositivo) ====================
 export async function revokeDevice(req, res) {
     try {
         const device = await Device.findByPk(req.params.id);
@@ -44,7 +42,6 @@ export async function revokeDevice(req, res) {
     }
 }
 
-// ==================== REACTIVAR (permite re-vincular) ====================
 export async function reactivateDevice(req, res) {
     try {
         const device = await Device.findByPk(req.params.id);

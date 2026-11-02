@@ -2,10 +2,7 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Notificación push al empleado. En el MVP: recordatorio de fichar y aviso de jornada
- * abierta (olvido de salida). Guarda el envío para tener historial e idempotencia.
- */
+// Guarda cada envío: el job la consulta para no repetir el aviso.
 const Notification = sequelize.define('notifications', {
     id: {
         type: DataTypes.INTEGER,

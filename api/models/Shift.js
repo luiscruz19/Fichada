@@ -2,11 +2,7 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Jornada / fichada. Una entrada y (opcionalmente) una salida, con sus ubicaciones.
- * Turno partido = varias jornadas cerradas en el mismo día.
- * No se puede abrir una jornada nueva si hay otra abierta del mismo empleado.
- */
+// Un turno partido son varias jornadas cerradas en el mismo día.
 const Shift = sequelize.define('shifts', {
     id: {
         type: DataTypes.INTEGER,

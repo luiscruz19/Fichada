@@ -1,6 +1,5 @@
 import { body, param } from 'express-validator';
 
-// La ubicación es obligatoria al fichar (sin GPS no se ficha).
 export const clockInValidation = [
     body('lat').notEmpty().withMessage('La latitud es obligatoria').bail()
         .isFloat({ min: -90, max: 90 }).withMessage('La latitud no es válida'),

@@ -2,12 +2,7 @@ import { DataTypes } from 'sequelize';
 import messages from '../config/messages.js';
 import sequelize from '../db/sequelize.js';
 
-/**
- * Solicitud de corrección hecha por el empleado. El admin nunca corrige de oficio:
- * todo cambio nace de una solicitud. Dos casos:
- *  - edit: corregir una jornada existente (típico: ajustar la salida del día anterior).
- *  - add:  dar de alta una jornada que se olvidó por completo (shift_id NULL).
- */
+// El admin nunca corrige de oficio: todo cambio nace de una solicitud del empleado.
 const CorrectionRequest = sequelize.define('correction_requests', {
     id: {
         type: DataTypes.INTEGER,
@@ -51,12 +46,10 @@ const CorrectionRequest = sequelize.define('correction_requests', {
     },
     reason: {
         type: DataTypes.STRING(500),
-        // Opcional: pedir una corrección no debería frenarse por tener que redactar un
-        // motivo. El admin igual ve qué jornada y qué hora se pide, y decide con eso.
+        // Opcional: el admin decide con la jornada y la hora pedidas.
         allowNull: true,
         validate: {
-            // Con allowNull:true el notNull queda muerto; el len sí sirve: hace que un
-            // texto largo salga como 400 y no como 500 desde MySQL.
+            // len hace que un texto largo salga como 400 y no como 500 desde MySQL.
             len: { args: [0, 500], msg: messages.error.correction_request.fields_empty.reason },
         },
         comment: 'Motivo que escribe el empleado (opcional)'
