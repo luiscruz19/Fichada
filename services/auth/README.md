@@ -52,7 +52,7 @@ Canonical shared authentication microservice. Handles user registration, login, 
 | `RATE_LIMIT_MAX` | no | Max requests per window per IP | `100` |
 | `AUTH_USE_JWT_LINKS` | no | Use signed JWT links for activation/reset emails | `false` |
 | `ADMIN_EMAIL` | no | Seed admin email (migration 007) | `` |
-| `ADMIN_PASSWORD` | no | Seed admin password | `CAMBIAR` |
+| `ADMIN_PASSWORD` | no | Seed admin password. Required to create the admin: without it, migration 007 skips it | `` |
 | `ADMIN_NOMBRE` | no | Seed admin display name | `Administrador` |
 
 Copy `.env.example` to `.env` and fill in your values before starting.

@@ -1,7 +1,8 @@
 import { randomInt } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 
-// Only runs if ADMIN_EMAIL is defined — safe to skip in projects that don't need a seeded admin
+// Only runs if ADMIN_EMAIL and ADMIN_PASSWORD are defined — safe to skip in projects that don't need a seeded admin.
+// There is no default password: an admin is never created with a known one.
 export default {
     async up(queryInterface) {
         const { ADMIN_EMAIL, ADMIN_PASSWORD, ADMIN_NOMBRE } = process.env;
@@ -10,7 +11,6 @@ export default {
             return;
         }
 
-        const password = ADMIN_PASSWORD || 'CAMBIAR';
         const nombre = ADMIN_NOMBRE || 'Administrador';
 
         const [existing] = await queryInterface.sequelize.query(
@@ -27,7 +27,12 @@ export default {
             return;
         }
 
-        const hashed = await bcrypt.hash(password, 12);
+        if (!ADMIN_PASSWORD) {
+            console.warn('[seed-admin] ADMIN_EMAIL está definido pero ADMIN_PASSWORD no: no se crea el admin.');
+            return;
+        }
+
+        const hashed = await bcrypt.hash(ADMIN_PASSWORD, 12);
         const uuid = Array.from({ length: 100 }, () =>
             'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'[randomInt(62)]
         ).join('');
